@@ -75,8 +75,6 @@ class dgConvexHull4dTetraherum
 	dgTetrahedrumPlane GetPlaneEquation (const dgHullVector* const points) const;
 	dgFloat64 Evalue (const dgHullVector* const pointArray, const dgBigVector& point) const;
 
-	dgBigVector CircumSphereCenter (const dgHullVector* const pointArray) const;
-
 	dgInt32 GetMark() const { return m_mark; }
 	void SetMark(dgInt32 mark) { m_mark = mark; }
 	
@@ -104,14 +102,14 @@ class dgConvexHull4d: public dgList<dgConvexHull4dTetraherum>
 	dgInt32 GetVertexIndex(dgInt32 i) const;
 	const dgBigVector& GetVertex(dgInt32 i) const;
 
-	const dgHullVector* GetHullVertexArray() const;
+	
 
 	dgInt32 IncMark (); 
 
 	protected:
 	dgConvexHull4d(dgMemoryAllocator* const allocator);
 
-	void BuildHull (dgMemoryAllocator* const allocator, const dgBigVector* const vertexCloud, dgInt32 count, dgFloat64 distTol);
+	void BuildHull (dgMemoryAllocator* const allocator, const dgBigVector* const vertexCloud, dgInt32 count, dgFloat32 distTol);
 
 	virtual dgInt32 AddVertex (const dgBigVector& vertex);
 	virtual dgInt32 InitVertexArray(dgHullVector* const points, const dgBigVector* const vertexCloud, dgInt32 count, void* const memoryPool, dgInt32 maxMemSize);
@@ -125,7 +123,7 @@ class dgConvexHull4d: public dgList<dgConvexHull4dTetraherum>
 	dgInt32 SupportVertex (dgAABBPointTree4d** const tree, const dgHullVector* const points, const dgBigVector& dir) const;
 	void TessellateTriangle (dgInt32 level, const dgVector& p0, const dgVector& p1, const dgVector& p2, dgInt32& count, dgBigVector* const ouput, dgInt32& start) const;
 
-	void CalculateConvexHull (dgAABBPointTree4d* vertexTree, dgHullVector* const points, dgInt32 count, dgFloat64 distTol);
+	void CalculateConvexHull (dgAABBPointTree4d* vertexTree, dgHullVector* const points, dgInt32 count, dgFloat32 distTol);
 	void LinkSibling (dgListNode* node0, dgListNode* node1)	const;
 	bool Sanity() const;
 	static dgInt32 ConvexCompareVertex(const dgHullVector* const  A, const dgHullVector* const B, void* const context);
@@ -134,7 +132,7 @@ class dgConvexHull4d: public dgList<dgConvexHull4dTetraherum>
 
 	dgInt32 m_mark;
 	dgInt32 m_count;
-	dgFloat64 m_diag;
+	dgFloat32 m_diag;
 	dgArray<dgHullVector> m_points;
 };
 
@@ -164,11 +162,6 @@ inline const dgBigVector& dgConvexHull4d::GetVertex(dgInt32 index) const
 	_ASSERTE (index < m_count);
 //	return dgVector (dgFloat32 (m_points[index].m_x), dgFloat32 (m_points[index].m_y), dgFloat32 (m_points[index].m_z), dgFloat32 (m_points[index].m_w));
 	return m_points[index];
-}
-
-inline const dgHullVector* dgConvexHull4d::GetHullVertexArray() const
-{
-	return &m_points[0];
 }
 
 #endif

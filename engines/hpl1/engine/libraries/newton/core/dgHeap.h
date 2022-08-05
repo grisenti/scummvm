@@ -241,13 +241,7 @@ void dgDownHeap<OBJECT,KEY>::Push (OBJECT &obj, KEY key)
 {
 	dgInt32 i;
 	dgInt32 j;
-#ifdef _DEBUG
-//	_ASSERTE (m_curCount < m_maxCount);
-	dgInt32 cc = dgHeapBase<OBJECT,KEY>::m_curCount;
-	dgInt32 cm = dgHeapBase<OBJECT,KEY>::m_maxCount;
-	_ASSERTE (cc < cm);
-#endif
-
+	_ASSERTE (m_curCount < m_maxCount);
 	dgHeapBase<OBJECT,KEY>::m_curCount ++;
 
 	for (i = dgHeapBase<OBJECT,KEY>::m_curCount; i; i = j) {
@@ -418,13 +412,7 @@ void dgUpHeap<OBJECT,KEY>::Push (OBJECT &obj, KEY key)
 {
 	dgInt32 i;
 	dgInt32 j;
-
-#ifdef _DEBUG
-	//	_ASSERTE (m_curCount < m_maxCount);
-	dgInt32 cc = dgHeapBase<OBJECT,KEY>::m_curCount;
-	dgInt32 cm = dgHeapBase<OBJECT,KEY>::m_maxCount;
-	_ASSERTE (cc < cm);
-#endif
+	_ASSERTE (m_curCount < m_maxCount);
 	dgHeapBase<OBJECT,KEY>::m_curCount ++;
 
 	for (i = dgHeapBase<OBJECT,KEY>::m_curCount; i; i = j) {

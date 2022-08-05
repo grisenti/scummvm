@@ -29,18 +29,17 @@
 
 #ifdef _DEBUG
 
-	void dgApi dgExpandTraceMessage (const char *fmt, ...);
-	#define dgTrace(x)					\
-	{							\
-		dgExpandTraceMessage	x;			\
-	}	
+void dgApi dgExpandTraceMessage (const char *fmt, ...);
+
+#define dgTrace(x)											\
+{															\
+	dgExpandTraceMessage	x;								\
+}																	
+
 
 #else
-	
-	inline void dgApi dgExpandTraceMessage (const char *fmt, ...)
-	{
-	}
-	#define dgTrace(x)
+
+#define dgTrace(x)
 
 #endif
 	

@@ -67,12 +67,7 @@ class dgTemplateVector
 	dgTemplateVector CompProduct4 (const dgTemplateVector &A) const;
 
 	// check validity of floats
-#ifdef _DEBUG
-	void Trace () const
-	{
-		dgTrace (("%f %f %f %f\n", m_x, m_y, m_z, m_w));
-	}
-#endif
+
 
 	DG_CLASS_ALLOCATOR(allocator)
 
@@ -82,7 +77,6 @@ class dgTemplateVector
 	T m_w;
 };
 
-class dgBigVector;
 
 DG_MSC_VECTOR_ALIGMENT
 class dgVector: public dgTemplateVector<dgFloat32>
@@ -95,7 +89,6 @@ class dgVector: public dgTemplateVector<dgFloat32>
 	dgVector (const dgTemplateVector<dgFloat32>& v);
 	dgVector (const dgFloat32 *ptr);
 	dgVector (dgFloat32 x, dgFloat32 y, dgFloat32 z, dgFloat32 w); 
-	dgVector (const dgBigVector& copy); 
 
 	dgFloat32 DotProductSimd (const dgVector& A) const;
 	dgVector CrossProductSimd (const dgVector &A) const;
@@ -126,15 +119,21 @@ dgTemplateVector<T>::dgTemplateVector () {}
 
 template<class T>
 dgTemplateVector<T>::dgTemplateVector (const T *ptr)
-	:m_x(ptr[0]), m_y(ptr[1]), m_z(ptr[2]), m_w (0.0f)
 {
+	m_x = ptr[0];
+	m_y = ptr[1];
+	m_z = ptr[2];
+	m_w = T (0.0f);
 //	_ASSERTE (dgCheckVector ((*this)));
 }
 
 template<class T>
 dgTemplateVector<T>::dgTemplateVector (T x, T y, T z, T w) 
-	:m_x(x), m_y(y), m_z(z), m_w (w)
 {
+	m_x = x;
+	m_y = y;
+	m_z = z;
+	m_w = w;
 }
 
 
@@ -179,7 +178,7 @@ dgTemplateVector<T>& dgTemplateVector<T>::operator+= (const dgTemplateVector<T> 
 	m_x += A.m_x;
 	m_y += A.m_y;
 	m_z += A.m_z;
-//	_ASSERTE (dgCheckVector ((*this)));
+	_ASSERTE (dgCheckVector ((*this)));
 	return *this;
 }
 
@@ -303,12 +302,6 @@ DG_INLINE dgVector::dgVector (const dgTemplateVector<dgFloat32>& v)
 
 DG_INLINE dgVector::dgVector (const dgFloat32 *ptr)
 	:dgTemplateVector<dgFloat32>(ptr)
-{
-	_ASSERTE (dgCheckVector ((*this)));
-}
-
-DG_INLINE dgVector::dgVector (const dgBigVector& copy)
-	:dgTemplateVector<dgFloat32>(dgFloat32 (copy.m_x), dgFloat32 (copy.m_y), dgFloat32 (copy.m_z), dgFloat32 (copy.m_w))
 {
 	_ASSERTE (dgCheckVector ((*this)));
 }

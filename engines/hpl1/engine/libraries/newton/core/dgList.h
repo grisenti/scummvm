@@ -40,7 +40,7 @@ class dgList
 		dgListNode (dgListNode* const prev, dgListNode* const next) 
 			:m_info () 
 		{
-//			_ASSERTE ((dgUnsigned64 (&m_info) & 0x0f) == 0);
+			_ASSERTE ((dgUnsigned64 (&m_info) & 0x0f) == 0);
 			m_prev = prev;
 			m_next = next;
 			if (m_prev) {
@@ -54,7 +54,7 @@ class dgList
 		dgListNode (const T &info, dgListNode* const prev, dgListNode* const next) 
 			:m_info (info) 
 		{
-//			_ASSERTE ((dgUnsigned64 (&m_info) & 0x0f) == 0);
+			_ASSERTE ((dgUnsigned64 (&m_info) & 0x0f) == 0);
 			m_prev = prev;
 			m_next = next;
 			if (m_prev) {
@@ -65,7 +65,7 @@ class dgList
 			}
 		}
 
-		virtual ~dgListNode()
+		~dgListNode()
 		{
 //			Unlink ();
 		}
@@ -131,6 +131,8 @@ class dgList
 
 	class Iterator
 	{
+		
+
 		public:
 		Iterator (const dgList<T> &me)
 		{
@@ -214,7 +216,7 @@ class dgList
 
 //	dgList ();
 	dgList (dgMemoryAllocator* const allocator);
-	virtual ~dgList ();
+	~dgList ();
 
 	dgMemoryAllocator* GetAllocator () const;
 	void SetAllocator (dgMemoryAllocator* const allocator);
@@ -235,14 +237,12 @@ class dgList
 	void InsertAfter (dgListNode* const root, dgListNode* const node);
 	void InsertBefore (dgListNode* const root, dgListNode* const node);
 
-
 	dgListNode *Find (const T &element) const;
 	dgListNode *GetNodeFromInfo (T &m_info) const;
 	void Remove (dgListNode* const node);
 	void Remove (const T &element);
 	void RemoveAll ();
 
-	void Merge (dgList<T>& list);
 	void Unlink (dgListNode* const node);
 	bool SanityCheck () const;
 
@@ -595,29 +595,6 @@ void dgList<T>::Unlink (dgListNode* const node)
 //	node->Remove();
 	node->Unlink();
 
-#ifdef __ENABLE_SANITY_CHECK 
-	_ASSERTE (SanityCheck ());
-#endif
-}
-
-template<class T> 
-void dgList<T>::Merge (dgList<T>& list)
-{
-	m_count += list.m_count;
-	if (list.m_first) {
-		list.m_first->m_prev = m_last; 
-	}
-	if (m_last) {
-		m_last->m_next = list.m_first;
-	}
-	m_last = list.m_last;
-	if (!m_first) {
-		m_first = list.m_first;
-	}
-
-	list.m_count = 0;
-	list.m_last = NULL;
-	list.m_first = NULL;
 #ifdef __ENABLE_SANITY_CHECK 
 	_ASSERTE (SanityCheck ());
 #endif

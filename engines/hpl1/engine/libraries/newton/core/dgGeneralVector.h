@@ -23,7 +23,7 @@
 #define __dgGeneralVector__
 
 #include "dgStdafx.h"
-#include "dgDebug.h"
+
 
 #define DG_COUNT_FLOAT_OPS
 
@@ -174,7 +174,7 @@ dgGeneralVector<T>::~dgGeneralVector ()
 		delete[] m_columns;
 	}
 }
-
+/*
 template<class T>
 void dgGeneralVector<T>::Trace () const
 {
@@ -185,7 +185,7 @@ void dgGeneralVector<T>::Trace () const
 	}
 	dgTrace (("\n"));
 }
-
+*/
 
 
 template<class T>

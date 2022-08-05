@@ -99,14 +99,16 @@ class dgContactPoint
 	dgBody* m_body0;
 	dgBody* m_body1;
 	dgCollision* m_collision0;
-	dgCollision* m_collision1;
+	union {
+		dgCollision* m_collision1;
+		dgInt32 m_isEdgeContact;
+	};
 	dgInt64 m_userId;
 	dgFloat32 m_penetration;
-	dgInt32 m_isEdgeContact;
 }DG_GCC_VECTOR_ALIGMENT;
 
 DG_MSC_VECTOR_ALIGMENT
-class dgCollisionParamProxy
+class dgCollisionParamProxi
 {	
 	public:
 	dgBody* m_floatingBody;
@@ -131,7 +133,7 @@ class dgCollisionParamProxy
 	dgInt32 m_inTriggerVolume : 1;
 
 
-	dgCollisionParamProxy(dgInt32 threadIndex)
+	dgCollisionParamProxi(dgInt32 threadIndex)
 	{
 		m_threadIndex = threadIndex;
 		m_polyMeshData = NULL;

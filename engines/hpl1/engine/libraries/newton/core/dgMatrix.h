@@ -30,12 +30,7 @@
 #include "dgSimd_Instrutions.h"
 #include <math.h>
 
-class dgMatrix;
 class dgQuaternion;
-
-const dgMatrix& dgGetZeroMatrix ();
-const dgMatrix& dgGetIdentityMatrix();
-
 
 DG_MSC_VECTOR_ALIGMENT
 class dgMatrix
@@ -57,7 +52,6 @@ class dgMatrix
 	const dgVector& operator[] (dgInt32 i) const;
 
 	dgMatrix Inverse () const;
-	dgMatrix Inverse4x4 () const;
 	dgMatrix Transpose () const;
 	dgMatrix Transpose4X4 () const;
 	dgMatrix Symetric3by3Inverse () const;
@@ -70,17 +64,8 @@ class dgMatrix
 	void TransformBBox (const dgVector& p0local, const dgVector& p1local, dgVector& p0, dgVector& p1) const; 
 
 	dgVector CalcPitchYawRoll () const;
-
-
-	void TransformTriplex (dgFloat32* const dst, dgInt32 dstStrideInBytes,
-						   const dgFloat32* const src, dgInt32 srcStrideInBytes, dgInt32 count) const;
-
-#ifndef	__USE_DOUBLE_PRECISION__
-	void TransformTriplex (dgFloat64* const dst, dgInt32 dstStrideInBytes,
-						   const dgFloat64* const src, dgInt32 srcStrideInBytes, dgInt32 count) const;
-	void TransformTriplex (dgFloat64* const dst, dgInt32 dstStrideInBytes,
-						   const dgFloat32* const src, dgInt32 srcStrideInBytes, dgInt32 count) const;
-#endif
+	void TransformTriplex (void* const dst, dgInt32 dstStrideInBytes,
+						   const void* const src, dgInt32 srcStrideInBytes, dgInt32 count) const;
 
 	dgMatrix operator* (const dgMatrix &B) const;
 	
@@ -88,8 +73,8 @@ class dgMatrix
 	// this function can not be a member of dgMatrix, because
 	// dgMatrix a define to handle only orthogonal matrices
 	// and this function take a parameter to a symmetric matrix
-	void EigenVectors (dgVector &eigenValues, const dgMatrix& initialGuess = dgGetIdentityMatrix());
-	void EigenVectors (const dgMatrix& initialGuess = dgGetIdentityMatrix());
+	void EigenVectors (dgVector &eigenValues);
+	void EigenVectors ();
 
 
 	// simd operations
@@ -107,6 +92,8 @@ class dgMatrix
 }DG_GCC_VECTOR_ALIGMENT;
 
 
+const dgMatrix& dgGetZeroMatrix ();
+const dgMatrix& dgGetIdentityMatrix();
 
 
 
@@ -114,7 +101,11 @@ DG_INLINE dgMatrix::dgMatrix ()
 {
 }
 
-DG_INLINE dgMatrix::dgMatrix (const dgVector &front, const dgVector &up, const dgVector &right, const dgVector &posit)
+DG_INLINE dgMatrix::dgMatrix (
+	const dgVector &front, 
+	const dgVector &up,
+	const dgVector &right,
+	const dgVector &posit)
 	:m_front (front), m_up(up), m_right(right), m_posit(posit)
 {
 }
@@ -212,11 +203,37 @@ DG_INLINE dgPlane dgMatrix::UntransformPlane (const dgPlane &globalPlane) const
 	return dgPlane (UnrotateVector (globalPlane), globalPlane.Evalue(m_posit));
 }
 
-DG_INLINE void dgMatrix::EigenVectors (const dgMatrix& initialGuess)
+DG_INLINE void dgMatrix::EigenVectors ()
 {
 	dgVector eigenValues;
-	EigenVectors (eigenValues, initialGuess);
+	EigenVectors (eigenValues);
 }
+
+
+/*
+DG_INLINE dgMatrix dgMatrix::operator* (const dgMatrix &B) const
+{
+	const dgMatrix& A = *this;
+	return dgMatrix (dgVector (A[0][0] * B[0][0] + A[0][1] * B[1][0] + A[0][2] * B[2][0] + A[0][3] * B[3][0],
+							   A[0][0] * B[0][1] + A[0][1] * B[1][1] + A[0][2] * B[2][1] + A[0][3] * B[3][1],
+							   A[0][0] * B[0][2] + A[0][1] * B[1][2] + A[0][2] * B[2][2] + A[0][3] * B[3][2],
+	                           A[0][0] * B[0][3] + A[0][1] * B[1][3] + A[0][2] * B[2][3] + A[0][3] * B[3][3]),
+					 dgVector (A[1][0] * B[0][0] + A[1][1] * B[1][0] + A[1][2] * B[2][0] + A[1][3] * B[3][0],
+							   A[1][0] * B[0][1] + A[1][1] * B[1][1] + A[1][2] * B[2][1] + A[1][3] * B[3][1],
+							   A[1][0] * B[0][2] + A[1][1] * B[1][2] + A[1][2] * B[2][2] + A[1][3] * B[3][2],
+							   A[1][0] * B[0][3] + A[1][1] * B[1][3] + A[1][2] * B[2][3] + A[1][3] * B[3][3]),
+					 dgVector (A[2][0] * B[0][0] + A[2][1] * B[1][0] + A[2][2] * B[2][0] + A[2][3] * B[3][0],
+							   A[2][0] * B[0][1] + A[2][1] * B[1][1] + A[2][2] * B[2][1] + A[2][3] * B[3][1],
+							   A[2][0] * B[0][2] + A[2][1] * B[1][2] + A[2][2] * B[2][2] + A[2][3] * B[3][2],
+							   A[2][0] * B[0][3] + A[2][1] * B[1][3] + A[2][2] * B[2][3] + A[2][3] * B[3][3]),
+					 dgVector (A[3][0] * B[0][0] + A[3][1] * B[1][0] + A[3][2] * B[2][0] + A[3][3] * B[3][0],
+							   A[3][0] * B[0][1] + A[3][1] * B[1][1] + A[3][2] * B[2][1] + A[3][3] * B[3][1],
+							   A[3][0] * B[0][2] + A[3][1] * B[1][2] + A[3][2] * B[2][2] + A[3][3] * B[3][2],
+							   A[3][0] * B[0][3] + A[3][1] * B[1][3] + A[3][2] * B[2][3] + A[3][3] * B[3][3]));
+
+	
+}
+*/
 
 
 DG_INLINE dgMatrix dgPitchMatrix(dgFloat32 ang)
@@ -264,6 +281,9 @@ DG_INLINE dgMatrix dgMatrix::Inverse () const
 					 dgVector (m_front.m_z, m_up.m_z, m_right.m_z, dgFloat32(0.0f)),
 					 dgVector (- (m_posit % m_front), - (m_posit % m_up), - (m_posit % m_right), dgFloat32(1.0f)));
 }
+
+
+
 
 DG_INLINE dgVector dgMatrix::TransformVectorSimd (const dgVector &v) const
 {

@@ -1,21 +1,21 @@
 /* Copyright (c) <2003-2011> <Julio Jerez, Newton Game Dynamics>
-*
+* 
 * This software is provided 'as-is', without any express or implied
 * warranty. In no event will the authors be held liable for any damages
 * arising from the use of this software.
-*
+* 
 * Permission is granted to anyone to use this software for any purpose,
 * including commercial applications, and to alter it and redistribute it
 * freely, subject to the following restrictions:
-*
+* 
 * 1. The origin of this software must not be misrepresented; you must not
 * claim that you wrote the original software. If you use this software
 * in a product, an acknowledgment in the product documentation would be
 * appreciated but is not required.
-*
+* 
 * 2. Altered source versions must be plainly marked as such, and must not be
 * misrepresented as being the original software.
-*
+* 
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
@@ -36,7 +36,7 @@ class dgWorkerThread
 };
 
 
-class dgThreads
+class dgThreads  
 {
 public:
 	dgThreads();
@@ -65,14 +65,19 @@ private:
 	{
 		dgInt32 m_ticks;
 		dgInt32 m_threadIndex;
-		dgThreads* m_manager;
+		dgThreads* m_manager; 
 	};
 
 	void DoWork(dgInt32 threadIndex);
 	dgInt32 GetWork(dgWorkerThread** cWork);
 
+#if (defined (_WIN_32_VER) || defined (_WIN_64_VER) || defined (_MINGW_32_VER) || defined (_MINGW_64_VER))
+	static dgUnsigned32 _stdcall ThreadExecute(void *Param);
+#endif
 
+#if (defined (_LINUX_VER) || defined (_MAC_VER))
 	static void* ThreadExecute(void *Param);
+#endif
 
 	dgInt32 m_numOfThreads;
 	dgInt32 m_numberOfCPUCores;
@@ -81,13 +86,24 @@ private:
 	dgInt32 m_workInProgress;
 	mutable dgInt32 m_globalSpinLock;
 
+#if (defined (_WIN_32_VER) || defined (_WIN_64_VER) || defined (_MINGW_32_VER) || defined (_MINGW_64_VER))
+	HANDLE m_exit;
+	HANDLE m_workToDo;
+	HANDLE m_emptySlot;
+	CRITICAL_SECTION m_criticalSection;
+	dgWorkerThread* m_queue[DG_MAXQUEUE];
+	HANDLE m_threadhandles[DG_MAXIMUN_THREADS];
+#endif
+
+#if (defined (_LINUX_VER) || defined (_MAC_VER))
 	bool m_exit;
 	dgInt32 m_emptySlot;
 	dgInt32 m_workToDo;
 	dgInt32 m_criticalSection;
 	dgInt32 m_workToDoSpinLock;
 	dgWorkerThread* m_queue[DG_MAXQUEUE];
-	//pthread_t m_threadhandles[DG_MAXIMUN_THREADS];
+	pthread_t m_threadhandles[DG_MAXIMUN_THREADS];
+#endif
 
 	OnGetPerformanceCountCallback m_getPerformanceCount;
 	dgLocadData m_localData[DG_MAXIMUN_THREADS];

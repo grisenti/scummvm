@@ -25,9 +25,7 @@
 #include "dgStdafx.h"
 #include "dgList.h"
 #include "dgTree.h"
-#include "dgHeap.h"
 #include "dgDebug.h"
-
 
 
 
@@ -40,7 +38,7 @@ class dgPolyhedra;
 
 typedef dgInt64 dgEdgeKey;
 
-/*
+
 class dgPolyhedraDescriptor
 {
 	public:
@@ -55,14 +53,26 @@ class dgPolyhedraDescriptor
 	dgInt32 m_maxVertexIndex;
 	dgList<dgEdge*> m_unboundedLoops;
 };
-*/
+
 
 DG_MSC_VECTOR_ALIGMENT
 class dgEdge
 {
 	public:
-	dgEdge ();
-	dgEdge (dgInt32 vertex, dgInt32 face, dgUnsigned64 userdata = 0);
+	dgEdge ()
+	{
+	}
+
+	dgEdge (dgInt32 vertex, dgInt32 face, dgUnsigned64 userdata = 0)
+	{
+		m_mark = 0;
+		m_twin = NULL;
+		m_next = NULL;
+		m_prev = NULL;
+		m_userData = userdata;
+		m_incidentVertex = vertex;
+		m_incidentFace = face;
+	}
 
 	dgInt32 m_incidentVertex;
 	dgInt32 m_incidentFace;
@@ -71,74 +81,91 @@ class dgEdge
 	dgEdge* m_prev;
 	dgEdge* m_twin;
 	dgInt32 m_mark;
-} DG_GCC_VECTOR_ALIGMENT;
+}DG_GCC_VECTOR_ALIGMENT;
 
 
 class dgPolyhedra: public dgTree <dgEdge, dgEdgeKey>
 {
 	public:
 
-	struct dgPairKey
-	{
-		dgPairKey ();
-		dgPairKey (dgInt64 val);
-		dgPairKey (dgInt32 v0, dgInt32 v1);
-		dgInt64 GetVal () const; 
-		dgInt32 GetLowKey () const;
-		dgInt32 GetHighKey () const;
+		struct dgPairKey
+		{
+			dgPairKey ()
+			{
+			}
+
+			dgPairKey (dgInt64 val)
+			{
+	//			i0 = (dgInt32) (val & 0xffffffff);
+	//			i1 = (dgInt32) ((val >> 32) & 0xffffffff);
+				m_key = dgUnsigned64 (val);
+			}
+
+			dgPairKey (dgInt32 v0, dgInt32 v1)
+			{
+	//			i0 = v0;
+	//			i1 = v1;
+				m_key = dgUnsigned64 ((dgInt64 (v0) << 32) | v1);
+			}
+
+			dgInt64 GetVal () const 
+			{
+	//			return (((dgInt64)i1) << 32) + i0;
+				return dgInt64 (m_key);
+			}
+
+			dgInt32 GetLowKey () const 
+			{
+	//			return i0 & 0x0xffffffff;
+				return dgInt32 (m_key>>32);
+			}
+
+			dgInt32 GetHighKey () const 
+			{
+	//			return i1;
+				return dgInt32 (m_key & 0xffffffff);
+			}
 
 		private:
-		dgUnsigned64 m_key;
-	};
+	//		dgInt32 i0;
+	//		dgInt32 i1;
+			dgUnsigned64 m_key;
 
+		};
+
+
+
+//	dgPolyhedra ();
 	dgPolyhedra (dgMemoryAllocator* const allocator);
 	dgPolyhedra (const dgPolyhedra &polyhedra);
 	virtual ~dgPolyhedra();
 
-	void BeginFace();
-	dgEdge* AddFace (dgInt32 v0, dgInt32 v1, dgInt32 v2);
-	dgEdge* AddFace (dgInt32 count, const dgInt32* const index);
-	dgEdge* AddFace (dgInt32 count, const dgInt32* const index, const dgInt64* const userdata);
-	void EndFace ();
-	void DeleteFace(dgEdge* const edge);
-
-	dgInt32 GetFaceCount() const;
-	dgInt32 GetEdgeCount() const;
-	dgInt32 GetLastVertexIndex() const;
-
-	dgInt32 IncLRU() const;
-	void SetLRU(dgInt32 lru) const;
-
-	dgEdge* FindEdge (dgInt32 v0, dgInt32 v1) const;
-	dgTreeNode* FindEdgeNode (dgInt32 v0, dgInt32 v1) const;
-
-	dgEdge* AddHalfEdge (dgInt32 v0, dgInt32 v1);
-	void DeleteEdge (dgEdge* const edge);
-	void DeleteEdge (dgInt32 v0, dgInt32 v1);
-	
-	bool FlipEdge (dgEdge* const edge);
-	dgEdge* SpliteEdge (dgInt32 newIndex, dgEdge* const edge);
-	dgBigVector FaceNormal (dgEdge* const face, const dgFloat64* const vertex, dgInt32 strideInBytes) const;
-
-	void BeginConectedSurface() const;
-	bool GetConectedSurface (dgPolyhedra &polyhedra) const;
-	void EndConectedSurface() const;
-
-	dgSphere CalculateSphere (const dgFloat64* const vertex, dgInt32 strideInBytes, const dgMatrix* const basis = NULL) const;
-	void ChangeEdgeIncidentVertex (dgEdge* const edge, dgInt32 newIndex);	
-	void DeleteDegenerateFaces (const dgFloat64* const pool, dgInt32 dstStrideInBytes, dgFloat64 minArea);
-
-	void Optimize (const dgFloat64* const pool, dgInt32 strideInBytes, dgFloat64 tol);
-	void Triangulate (const dgFloat64* const vertex, dgInt32 strideInBytes, dgPolyhedra* const leftOversOut);
-	void ConvexPartition (const dgFloat64* const vertex, dgInt32 strideInBytes, dgPolyhedra* const leftOversOut);
-
-/*
 	bool SanityCheck() const;
 
+	void SetLRU(dgInt32 lru)	const
+	{
+		if (lru > m_edgeMark) {
+			m_edgeMark = lru;
+		}
+	}
+
+	dgInt32 IncLRU() const
+	{	
+		m_edgeMark ++;
+		_ASSERTE (m_edgeMark < 0x7fffffff);
+		return m_edgeMark;
+	}
+
+	void BeginFace();
+	dgEdge* AddFace (dgInt32 v0, dgInt32 v1, dgInt32 v2);
+	dgEdge* AddFace (dgInt32 count, const dgInt32* const index) {return AddFace (count, index, NULL);}
+	dgEdge* AddFace (dgInt32 count, const dgInt32* const index, const dgInt64* const userdata);
+
+	void EndFace ();
 
 	// create an edge and add it to the tree. 
 	// the edge is not linked to the existing edge list
-	
+	dgEdge* AddHalfEdge (dgInt32 v0, dgInt32 v1);
 
 	// create a complete edge and add it to the tree
 	//	the new edge is linked to the existing edge list
@@ -148,71 +175,99 @@ class dgPolyhedra: public dgTree <dgEdge, dgEdgeKey>
 	void DeleteEdge (dgEdge* const edge);
 
 	void DeleteAllFace();
-
-	
+	void DeleteFace(dgEdge* const edge);
+	void DeleteDegenerateFaces (const dgFloat32* const pool, dgInt32 dstStrideInBytes, dgFloat32 minArea);
 
   	dgInt32 GetMaxIndex() const;
-  	
+  	dgInt32 GetFaceCount() const;
 	dgInt32 GetUnboundedFaceCount() const;
-	
-	dgBigVector BigFaceNormal (dgEdge* const face, const dgFloat64* const pool, dgInt32 strideInBytes) const;
+	dgVector FaceNormal (dgEdge* const face, const dgFloat32* const vertex, dgInt32 strideInBytes) const;
+	dgBigVector BigFaceNormal (dgEdge* const face, const dgFloat32* const pool, dgInt32 strideInBytes) const;
 
 
-	
-	
+	bool FlipEdge (dgEdge* const edge);
+	dgEdge* SpliteEdge (dgInt32 newIndex, dgEdge* const edge);
 	dgEdge* SpliteEdgeAndTriangulate (dgInt32 newIndex, dgEdge* const edge);
 
 	dgEdge* FindVertexNode (dgInt32 v0) const;
+	dgEdge* FindEdge (dgInt32 v0, dgInt32 v1) const;
+	dgTreeNode* FindEdgeNode (dgInt32 v0, dgInt32 v1) const;
 	
-	dgInt32 PackVertex (dgFloat64* const destArray, const dgFloat64* const unpackArray, dgInt32 strideInBytes);
-	void DeleteOverlapingFaces (const dgFloat64* const pool, dgInt32 strideInBytes, dgFloat64 distTol);
+//	bool TriangulateFace (dgEdge* const face, const dgFloat32* const vertex, dgInt32 strideInBytes, dgVector& normalOut);
+//	void OptimizeTriangulation (const dgFloat32* const vertex, dgInt32 strideInBytes);
+	
+	//void Quadrangulate (const dgFloat32* const vertex, dgInt32 strideInBytes);
+	
+	void Triangulate (const dgFloat32* const vertex, dgInt32 strideInBytes, dgPolyhedra* const leftOversOut);
+	void ConvexPartition (const dgFloat32* const vertex, dgInt32 strideInBytes, dgPolyhedra* const leftOversOut);
+	dgSphere CalculateSphere (const dgFloat32* const vertex, dgInt32 strideInBytes, const dgMatrix* const basis = NULL) const;
+
+	dgInt32 PackVertex (dgFloat32* const destArray, const dgFloat32* const unpackArray, dgInt32 strideInBytes);
+
+//	void Merge (dgPolyhedraDescriptor &desc, dgFloat32 myPool[], dgInt32 myStrideInBytes, const dgPolyhedra& he, const dgFloat32 hisPool[], dgInt32 hisStrideInBytes);
+//	void CombineOpenFaces (const dgFloat32* const pool, dgInt32 strideInBytes, dgFloat32 distTol);
+
+	void DeleteOverlapingFaces (const dgFloat32* const pool, dgInt32 strideInBytes, dgFloat32 distTol);
+
+
+	void BeginConectedSurface() const
+	{
+	   m_baseMark = IncLRU();
+	}
+	bool GetConectedSurface (dgPolyhedra &polyhedra) const;
+	void EndConectedSurface() const
+	{
+	}
+
 	void InvertWinding ();
+
+//	dgEdge* GetBadEdge (dgList<dgEdge*>& faceList  const dgFloat32* const pool, dgInt32 strideInBytes) const; 
 
 	// find edges edge shared by two or more non adjacent faces
 	// this make impossible to triangulate the polyhedra
-	void GetBadEdges (dgList<dgEdge*>& faceList, const dgFloat64* const pool, dgInt32 strideInBytes) const; 
+	void GetBadEdges (dgList<dgEdge*>& faceList, const dgFloat32* const pool, dgInt32 strideInBytes) const; 
 
-	
-	void GetCoplanarFaces (dgList<dgEdge*>& faceList, dgEdge* startFace, const dgFloat64* const pool, dgInt32 hisStrideInBytes, dgFloat64 normalDeviation) const;
+	void ChangeEdgeIncidentVertex (dgEdge* const edge, dgInt32 newIndex);
+	void GetCoplanarFaces (dgList<dgEdge*>& faceList, dgEdge* startFace, 
+						   const dgFloat32* const pool, dgInt32 hisStrideInBytes,
+						   dgFloat32 normalDeviation) const;
+
+
 	void GetOpenFaces (dgList<dgEdge*>& faceList) const;
-	void CollapseDegenerateFaces (dgPolyhedraDescriptor &desc, const dgFloat64* const pool, dgInt32 strideInBytes, dgFloat64 area);
+
+
+
+	// reduce number of unnecessary edges in a polyhedra
+	// note: the polyhedra must be a triangular polyhedra
+	void Optimize (const dgFloat32* const pool, dgInt32 strideInBytes, dgFloat32 tol);
 	
 
+	void CollapseDegenerateFaces (dgPolyhedraDescriptor &desc, const dgFloat32* const pool, dgInt32 strideInBytes, dgFloat32 area);
+	dgEdge* CollapseEdge(dgEdge* const edge);
 
-	// this function assume the mesh is a legal mesh;
-	dgInt32 TriangleList (dgUnsigned32 outputBuffer[], dgInt32 maxBufferSize, dgInt32 vertexCacheSize = 12) const;
-	void SwapInfo (dgPolyhedra& source);
-
-
-*/
 
 	// this function ayend to create a better triangulation of a mesh
 	// by first calling the calling quadrangular and then triangulate 
 	// all quad strips.
+	//void OptimalTriangulation (const dgFloat32* const vertex, dgInt32 strideInBytes);
+
+
+	// this function assume the mesh is a legal mesh;
+	// note: recommend a call to Triangulate, or OptimalTriangulation 
+	//			before using this function.
+	// return index count
+	dgInt32 TriangleList (dgUnsigned32 outputBuffer[], dgInt32 maxBufferSize, dgInt32 vertexCacheSize = 12) const;
+
 	// this function assume the mesh is a legal mesh;
 	// note1: recommend a call to Triangulate or OptimalTriangulation 
 	//			 before using this function
 	// note2: a index set to 0xffffffff indicate a run start
 	// return index count
-	//	dgInt32 TriangleStrips (dgUnsigned32 outputBuffer[], dgInt32 maxBufferSize, dgInt32 vertexCacheSize = 12) const;
-	//	void OptimalTriangulation (const dgFloat64* const vertex, dgInt32 strideInBytes);
-	//	void CombineOpenFaces (const dgFloat64* const pool, dgInt32 strideInBytes, dgFloat64 distTol);
-	//	bool TriangulateFace (dgEdge* const face, const dgFloat64* const vertex, dgInt32 strideInBytes, dgBigVector& normalOut);
-	//	void OptimizeTriangulation (const dgFloat64* const vertex, dgInt32 strideInBytes);
-	//	void Quadrangulate (const dgFloat64* const vertex, dgInt32 strideInBytes);
-	//	dgEdge* GetBadEdge (dgList<dgEdge*>& faceList  const dgFloat64* const pool, dgInt32 strideInBytes) const; 
+	//dgInt32 TriangleStrips (dgUnsigned32 outputBuffer[], dgInt32 maxBufferSize, dgInt32 vertexCacheSize = 12) const;
+
+	void SwapInfo (dgPolyhedra& source);
 
 	private:
-	
-	void RefineTriangulation (const dgFloat64* const vertex, dgInt32 stride);
-	void RefineTriangulation (const dgFloat64* const vertex, dgInt32 stride, dgBigVector* const normal, dgInt32 perimeterCount, dgEdge** const perimeter);
-	void OptimizeTriangulation (const dgFloat64* const vertex, dgInt32 strideInBytes);
-	void MarkAdjacentCoplanarFaces (dgPolyhedra& polyhedraOut, dgEdge* const face, const dgFloat64* const pool, dgInt32 strideInBytes);
-	dgEdge* FindEarTip (dgEdge* const face, const dgFloat64* const pool, dgInt32 stride, dgDownHeap<dgEdge*, dgFloat64>& heap, const dgBigVector &normal) const;
-	dgEdge* TriangulateFace (dgEdge* face, const dgFloat64* const pool, dgInt32 stride, dgDownHeap<dgEdge*, dgFloat64>& heap, dgBigVector* const faceNormalOut);
-	
-	dgFloat64 EdgePenalty (const dgBigVector* const pool, dgEdge* const edge) const;
-
 	mutable dgInt32 m_baseMark;
 	mutable dgInt32 m_edgeMark;
 	mutable dgInt32 m_faceSecuence;
@@ -220,152 +275,6 @@ class dgPolyhedra: public dgTree <dgEdge, dgEdgeKey>
 	friend class dgPolyhedraDescriptor;
 	
 };
-
-
-
-inline dgEdge::dgEdge ()
-{
-}
-
-inline dgEdge::dgEdge (dgInt32 vertex, dgInt32 face, dgUnsigned64 userdata)
-	:m_incidentVertex(vertex)
-	,m_incidentFace(face)
-	,m_userData(userdata)
-	,m_next(NULL)
-	,m_prev(NULL)
-	,m_twin(NULL)
-	,m_mark(0)
-{
-}
-
-
-inline dgPolyhedra::dgPairKey::dgPairKey ()
-{
-}
-
-inline dgPolyhedra::dgPairKey::dgPairKey (dgInt64 val)
-	:m_key(dgUnsigned64 (val))
-{
-}
-
-inline dgPolyhedra::dgPairKey::dgPairKey (dgInt32 v0, dgInt32 v1)
-	:m_key (dgUnsigned64 ((dgInt64 (v0) << 32) | v1))
-{
-}
-
-inline dgInt64 dgPolyhedra::dgPairKey::GetVal () const 
-{
-	return dgInt64 (m_key);
-}
-
-inline dgInt32 dgPolyhedra::dgPairKey::GetLowKey () const 
-{
-	return dgInt32 (m_key>>32);
-}
-
-inline dgInt32 dgPolyhedra::dgPairKey::GetHighKey () const 
-{
-	return dgInt32 (m_key & 0xffffffff);
-}
-
-inline void dgPolyhedra::BeginFace ()
-{
-}
-
-inline dgEdge* dgPolyhedra::AddFace (dgInt32 count, const dgInt32* const index) 
-{
-	return AddFace (count, index, NULL);
-}
-
-inline dgEdge* dgPolyhedra::AddFace (dgInt32 v0, dgInt32 v1, dgInt32 v2)
-{
-	dgInt32 vertex[3];
-
-	vertex [0] = v0;
-	vertex [1] = v1;
-	vertex [2] = v2;
-	return AddFace (3, vertex, NULL);
-}
-
-inline dgInt32 dgPolyhedra::GetEdgeCount() const
-{
-#ifdef _DEBUG
-	dgInt32 edgeCount = 0;
-	Iterator iter(*this);
-	for (iter.Begin(); iter; iter ++) {
-		edgeCount ++;
-	}
-	_ASSERTE (edgeCount == GetCount());;
-#endif
-	return GetCount();
-}
-
-inline dgInt32 dgPolyhedra::GetLastVertexIndex() const
-{
-	dgInt32 maxVertexIndex = -1;
-	Iterator iter(*this);
-	for (iter.Begin(); iter; iter ++) {
-		const dgEdge* const edge = &(*iter);
-		if (edge->m_incidentVertex > maxVertexIndex) {
-			maxVertexIndex = edge->m_incidentVertex;
-		}
-	}
-	return maxVertexIndex + 1;
-}
-
-
-inline dgInt32 dgPolyhedra::IncLRU() const
-{	
-	m_edgeMark ++;
-	_ASSERTE (m_edgeMark < 0x7fffffff);
-	return m_edgeMark;
-}
-
-inline void dgPolyhedra::SetLRU(dgInt32 lru) const
-{
-	if (lru > m_edgeMark) {
-		m_edgeMark = lru;
-	}
-}
-
-inline void dgPolyhedra::BeginConectedSurface() const
-{
-	m_baseMark = IncLRU();
-}
-
-inline void dgPolyhedra::EndConectedSurface() const
-{
-}
-
-
-inline dgPolyhedra::dgTreeNode* dgPolyhedra::FindEdgeNode (dgInt32 i0, dgInt32 i1) const
-{
-	dgPairKey key (i0, i1);
-	return Find (key.GetVal());
-}
-
-
-inline dgEdge *dgPolyhedra::FindEdge (dgInt32 i0, dgInt32 i1) const
-{
-	//	dgTreeNode *node;
-	//	dgPairKey key (i0, i1);
-	//	node = Find (key.GetVal());
-	//	return node ? &node->GetInfo() : NULL;
-	dgTreeNode* const node = FindEdgeNode (i0, i1);
-	return node ? &node->GetInfo() : NULL;
-}
-
-inline void dgPolyhedra::DeleteEdge (dgInt32 v0, dgInt32 v1)
-{
-	dgPairKey pairKey (v0, v1);
-	dgTreeNode* const node = Find(pairKey.GetVal());
-	dgEdge* const edge = node ? &node->GetInfo() : NULL;
-	if (!edge) {
-		return;
-	}
-	DeleteEdge (edge);
-}
-
 
 #endif
 

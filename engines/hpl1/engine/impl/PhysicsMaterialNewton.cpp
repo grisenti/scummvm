@@ -283,17 +283,17 @@ bool ContactProcessor::processNext() {
 
 	// Force
 	float force[3];
-	NewtonMaterialGetContactForce(_material, _body0, force);
+	NewtonMaterialGetContactForce(_material, force);
 	_contactData.mvForce += cVector3f::fromArray(force);
 
 	// Position and normal
 	float matPos[3], matNormal[3];
-	NewtonMaterialGetContactPositionAndNormal(_material, _body0, matPos, matNormal);
+	NewtonMaterialGetContactPositionAndNormal(_material, matPos, matNormal);
 	_contactData.mvContactNormal += cVector3f::fromArray(matNormal);
 	_contactData.mvContactPosition += cVector3f::fromArray(matPos);
 
 	if (_contactBody0->GetWorld()->GetSaveContactPoints()) {
-		NewtonMaterialGetContactPositionAndNormal(_material, _body0, matPos, matNormal);
+		NewtonMaterialGetContactPositionAndNormal(_material, matPos, matNormal);
 		cCollidePoint collidePoint;
 		collidePoint.mfDepth = 1;
 		collidePoint.mvPoint = cVector3f::fromArray(matPos);

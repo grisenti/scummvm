@@ -40,12 +40,13 @@ class AdjacentdFaces
 	dgInt32 m_count;
 	dgInt32 *m_index;
 	dgPlane m_normal;
-	dgInt64 m_edgeMap[256];
 };
 
 class dgPolygonSoupDatabaseBuilder 
 {
 	public:
+
+
 	dgPolygonSoupDatabaseBuilder (dgMemoryAllocator* const allocator);
 	~dgPolygonSoupDatabaseBuilder ();
 
@@ -68,15 +69,13 @@ class dgPolygonSoupDatabaseBuilder
 	dgInt32 AddConvexFace (dgInt32 count, dgInt32* const indexArray, dgInt32* const  facesArray);
 	void OptimizeByGroupID (dgPolygonSoupDatabaseBuilder& source, dgInt32 faceNumber, dgInt32 faceIndexNumber, dgPolygonSoupDatabaseBuilder& leftOver); 
 
-	void PackArray();
-
 //	void WriteDebugOutput (const char* name);
 
 	public:
-	struct VertexArray: public dgArray<dgBigVector>
+	struct VertexArray: public dgArray<dgTriplex>
 	{
 		VertexArray(dgMemoryAllocator* const allocator)
-			:dgArray<dgBigVector>(1024 * 256, allocator)
+			:dgArray<dgTriplex>(1024 * 256, allocator)
 		{
 		}
 	};
@@ -89,7 +88,6 @@ class dgPolygonSoupDatabaseBuilder
 		}
 	};
 
-	dgInt32 m_run;
 	dgInt32 m_faceCount;
 	dgInt32 m_indexCount;
 	dgInt32 m_vertexCount;

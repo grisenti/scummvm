@@ -60,8 +60,8 @@ class dgPolygonSoupDatabase//: public dgRef
 	protected:
 	virtual void ForAllSectors (const dgVector& min, const dgVector& max, dgAABBIntersectCallback callback, void* const context) const;
 	virtual void ForAllSectorsSimd (const dgVector& min, const dgVector& max, dgAABBIntersectCallback callback, void* const context) const;
-	virtual void ForAllSectorsRayHit (const dgFastRayTest& ray, dgRayIntersectCallback callback, void* const context) const;
-	virtual void ForAllSectorsRayHitSimd (const dgFastRayTest& ray, dgRayIntersectCallback callback, void* const context) const;
+	virtual void ForAllSectorsRayHit (const FastRayTest& ray, dgRayIntersectCallback callback, void* const context) const;
+	virtual void ForAllSectorsRayHitSimd (const FastRayTest& ray, dgRayIntersectCallback callback, void* const context) const;
 
 	dgPolygonSoupDatabase(const char *name = NULL);
 	virtual ~dgPolygonSoupDatabase ();
@@ -140,12 +140,12 @@ inline void dgPolygonSoupDatabase::GetAABB (dgVector& p0, dgVector& p1) const
 }
 
 
-inline void dgPolygonSoupDatabase::ForAllSectorsRayHit (const dgFastRayTest& ray, dgRayIntersectCallback callback, void* const context) const
+inline void dgPolygonSoupDatabase::ForAllSectorsRayHit (const FastRayTest& ray, dgRayIntersectCallback callback, void* const context) const
 {
 	_ASSERTE (0);
 }
 
-inline void dgPolygonSoupDatabase::ForAllSectorsRayHitSimd (const dgFastRayTest& ray, dgRayIntersectCallback callback, void* const context) const
+inline void dgPolygonSoupDatabase::ForAllSectorsRayHitSimd (const FastRayTest& ray, dgRayIntersectCallback callback, void* const context) const
 {
 	_ASSERTE (0);
 }

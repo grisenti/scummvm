@@ -47,7 +47,8 @@ class dgRedBackNode
 	{
 	}
 
-	virtual ~dgRedBackNode () 
+//	virtual ~dgRedBackNode () 
+	~dgRedBackNode () 
 	{
 	}
 
@@ -96,7 +97,7 @@ class dgTree
 			dgTreeNode* parentNode)
 			:dgRedBackNode(parentNode), m_info (info), m_key (key)
 		{
-//			_ASSERTE ((dgUnsigned64 (&m_info) & 0x0f) == 0);
+			_ASSERTE ((dgUnsigned64 (&m_info) & 0x0f) == 0);
 		}
 
 		~dgTreeNode () 
@@ -240,7 +241,7 @@ class dgTree
 
 //	dgTree ();
 	dgTree (dgMemoryAllocator* const allocator);
-	virtual ~dgTree (); 
+	~dgTree (); 
 
 	dgMemoryAllocator* GetAllocator () const;
 	void SetAllocator (dgMemoryAllocator* const allocator);
@@ -438,36 +439,37 @@ typename dgTree<OBJECT, KEY>::dgTreeNode* dgTree<OBJECT, KEY>::GetNodeFromInfo (
 template<class OBJECT, class KEY>
 typename dgTree<OBJECT, KEY>::dgTreeNode* dgTree<OBJECT, KEY>::FindGreater (KEY key) const
 {
+//	dgInt32 val;
+//	dgTreeNode* ptr;
+//	dgTreeNode* prev;
+
 	if (m_head == NULL) {
 		return NULL;
 	}
 
 	dgTreeNode* prev = NULL;
 	dgTreeNode* ptr = m_head;
-
+	dgInt32 val = 0;
 	while (ptr != NULL) {
-		if (key < ptr->m_key) {
-			prev = ptr;
+		_ASSERTE (0);
+		val = CompareKeys (ptr->m_key, key);
+		if (!val) {
+			return (dgTreeNode* )ptr->Next();
+		}
+		prev = ptr;
+		if (val < 0) {
 			ptr = ptr->GetLeft();
 		} else {
 			ptr = ptr->GetRight();
 		}
 	}
 
-#ifdef __ENABLE_SANITY_CHECK
-	if (prev) {
-		Iterator iter (*this);
-		for (iter.Begin(); iter.GetNode() != prev; iter ++) {
-			KEY key1 = iter.GetKey(); 
-			_ASSERTE (key1 <= key);
+	if (val > 0) {
+		while (prev->m_parent && (prev->m_parent->m_right == prev)) {
+			prev = prev->GetParent(); 
 		}
-		for (; iter.GetNode(); iter ++) {
-			KEY key1 = iter.GetKey(); 
-			_ASSERTE (key1 > key);
-		}
+		prev = prev->GetParent(); 
 	}
-#endif
-
 	return (dgTreeNode* )prev; 
 }
 
@@ -480,33 +482,27 @@ typename dgTree<OBJECT, KEY>::dgTreeNode* dgTree<OBJECT, KEY>::FindGreaterEqual 
 
 	dgTreeNode* prev = NULL;
 	dgTreeNode* ptr = m_head;
-	
+	dgInt32 val = 0;
 	while (ptr != NULL) {
-		if (key == ptr->m_key) {
+		_ASSERTE (0);
+		val = CompareKeys (ptr->m_key, key);
+		if (!val) {
 			return ptr;
 		}
-		if (key < ptr->m_key) {
-			prev = ptr;
+		prev = ptr;
+		if (val < 0) {
 			ptr = ptr->GetLeft();
 		} else {
 			ptr = ptr->GetRight();
 		}
 	}
 
-#ifdef __ENABLE_SANITY_CHECK
-	if (prev) {
-		Iterator iter (*this);
-		for (iter.Begin(); iter.GetNode() != prev; iter ++) {
-			KEY key1 = iter.GetKey(); 
-			_ASSERTE (key1 <= key);
+	if (val > 0) {
+		while (prev->m_parent && (prev->m_parent->m_right == prev)) {
+			prev = prev->GetParent(); 
 		}
-		for (; iter.GetNode(); iter ++) {
-			KEY key1 = iter.GetKey(); 
-			_ASSERTE (key1 >= key);
-		}
+		prev = prev->GetParent(); 
 	}
-#endif
-
 	return (dgTreeNode* )prev; 
 }
 
@@ -519,35 +515,27 @@ typename dgTree<OBJECT, KEY>::dgTreeNode* dgTree<OBJECT, KEY>::FindLessEqual (KE
 
 	dgTreeNode* prev = NULL;
 	dgTreeNode* ptr = m_head;
-
+	dgInt32 val = 0;
 	while (ptr != NULL) {
-		if (key == ptr->m_key) {
+		_ASSERTE (0);
+		val = CompareKeys (ptr->m_key, key);
+		if (!val) {
 			return ptr;
 		}
-
-		if (key < ptr->m_key) {
+		prev = ptr;
+		if (val < 0) {
 			ptr = ptr->GetLeft();
 		} else {
-			prev = ptr;
 			ptr = ptr->GetRight();
 		}
-
 	}
 
-#ifdef __ENABLE_SANITY_CHECK
-	if (prev) {
-		Iterator iter (*this);
-		for (iter.End(); iter.GetNode() != prev; iter --) {
-			KEY key1 = iter.GetKey(); 
-			_ASSERTE (key1 >= key);
+	if (val < 0) {
+		while (prev->m_parent && (prev->m_parent->m_left == prev)) {
+			prev = prev->GetParent(); 
 		}
-		for (; iter.GetNode(); iter --) {
-			KEY key1 = iter.GetKey(); 
-			_ASSERTE (key1 < key);
-		}
+		prev = prev->GetParent(); 
 	}
-#endif
-
 	return (dgTreeNode* )prev; 
 }
 
@@ -560,6 +548,17 @@ typename dgTree<OBJECT, KEY>::dgTreeNode* dgTree<OBJECT, KEY>::Insert (const OBJ
 	elementWasInTree = false;
 	while (ptr != NULL) {
 		parent = ptr;
+//		val = CompareKeys (ptr->m_key, key);
+//		dgInt32 dgTree<OBJECT, KEY>::CompareKeys (const KEY &key0, const KEY &key1) const
+//		{
+//			if (key1 < key0) {
+//				return - 1;
+//			}
+//			if (key1 > key0) {
+//				return 1;
+//			}
+//			return 0;
+//		}
 
 		if (key < ptr->m_key) {
 			_ASSERTE (CompareKeys (ptr->m_key, key) == -1) ;
@@ -837,6 +836,7 @@ void dgTree<OBJECT, KEY>::SwapInfo (dgTree<OBJECT, KEY>& tree)
 {
 	Swap (m_head, tree.m_head);
 	Swap (m_count, tree.m_count);
+	
 }
 
 //template<class OBJECT, class KEY> dgInt32 dgTree<OBJECT,KEY>::m_size = 0;

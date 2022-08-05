@@ -28,16 +28,14 @@
 class dgDelaunayTetrahedralization: public dgConvexHull4d
 {
 	public:
-	dgDelaunayTetrahedralization(dgMemoryAllocator* const allocator, const dgFloat64* const vertexCloud, dgInt32 count, dgInt32 strideInByte, dgFloat64 distTol);
+	dgDelaunayTetrahedralization(dgMemoryAllocator* const allocator, const dgFloat32* const vertexCloud, dgInt32 count, dgInt32 strideInByte, dgFloat32 distTol);
 	virtual ~dgDelaunayTetrahedralization();
 	void RemoveUpperHull ();
 
 	dgInt32 AddVertex (const dgBigVector& vertex);
 
 	protected:
-	virtual void DeleteFace (dgListNode* const node) ;
 	dgFloat64 GetTetraVolume (const dgConvexHull4dTetraherum* const tetra) const;
-	
 
 
 #ifdef _DEBUG

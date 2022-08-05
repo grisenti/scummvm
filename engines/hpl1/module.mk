@@ -352,8 +352,6 @@ MODULE_OBJS := \
 	engine/libraries/newton/physics/dgHingeConstraint.o \
 	engine/libraries/newton/physics/dgMeshEffect.o \
 	engine/libraries/newton/physics/dgMeshEffect2.o \
-	engine/libraries/newton/physics/dgMeshEffect3.o \
-	engine/libraries/newton/physics/dgMeshEffectSolidTree.o \
 	engine/libraries/newton/physics/dgMinkowskiConv.o \
 	engine/libraries/newton/physics/dgNarrowPhaseCollision.o \
 	engine/libraries/newton/physics/dgPointToCurveConstraint.o \
