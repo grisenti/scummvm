@@ -36,6 +36,11 @@
 #include "hpl1/penumbra-overture/Notebook.h"
 #include "hpl1/penumbra-overture/Player.h"
 #include "hpl1/penumbra-overture/RadioHandler.h"
+#include "hpl1/hpl1.h"
+#include "hpl1/string.h"
+#include "common/savefile.h"
+#include "hpl1/debug.h"
+#include <stdio.h>
 
 //////////////////////////////////////////////////////////////////////////
 // SAVED WORLD
@@ -218,7 +223,7 @@ cSaveHandler::cSaveHandler(cInit *apInit) : iUpdateable("SaveHandler") {
 	//////////////////////////////////////////////
 	// Create directories
 	msSaveDir = _W("");
-	LowLevelSystem *pLowLevelSystem = mpInit->mpGame->GetSystem()->GetLowLevel();
+	/*LowLevelSystem *pLowLevelSystem = */mpInit->mpGame->GetSystem()->GetLowLevel();
 
 	tWString sPeronalDir = GetSystemSpecialPath(eSystemPath_Personal);
 
@@ -350,7 +355,7 @@ void cSaveHandler::SaveData(const tString &asName) {
 //-----------------------------------------------------------------------
 
 void cSaveHandler::LoadData(const tString &asName) {
-	cWorld3D *pWorld = mpInit->mpGame->GetScene()->GetWorld3D();
+	/*cWorld3D *pWorld = */mpInit->mpGame->GetScene()->GetWorld3D();
 	cSavedWorld *pSavedWorld = mpSavedGame->GetSavedWorld(asName);
 
 	///////////////////////
@@ -378,7 +383,7 @@ void cSaveHandler::LoadData(const tString &asName) {
 
 	///////////////////////
 	// Inventory callbacks
-	cInventory *pInventory = mpInit->mpInventory;
+	//cInventory *pInventory = mpInit->mpInventory;
 
 	///////////////////////
 	// Use callbacks
@@ -501,10 +506,11 @@ void cSaveHandler::SaveGameToFile(const tWString &asFile) {
 
 //-----------------------------------------------------------------------
 
-void cSaveHandler::LoadGameFromFile(const tWString &asFile) {
+void cSaveHandler::LoadGameFromFile(const tWString &asFile, bool drawLoadingScreen) {
 	///////////////////////////////
 	// Draw loading screen.
-	mpInit->mpGraphicsHelper->DrawLoadingScreen("");
+	if (drawLoadingScreen) // if the loading screen has already been drawn, drawing it twice causes bugs
+		mpInit->mpGraphicsHelper->DrawLoadingScreen("");
 
 	// 1. Reset everything
 	// 2. Load all data from file
@@ -597,7 +603,7 @@ void cSaveHandler::LoadGameFromFile(const tWString &asFile) {
 void cSaveHandler::AutoSave(const tWString &asDir, int alMaxSaves) {
 	//////////////////////
 	// Check the available autosaves
-	DeleteOldestIfMax(_W("save/") + asDir, _W("*.sav"), alMaxSaves);
+	DeleteOldestIfMax(asDir, _W(":*"), alMaxSaves);
 
 	//////////////////////
 	// Save the autosave
@@ -606,7 +612,7 @@ void cSaveHandler::AutoSave(const tWString &asDir, int alMaxSaves) {
 	sMapName = cString::ReplaceCharToW(sMapName, _W(":"), _W(" "));
 	cDate date = mpInit->mpGame->GetSystem()->GetLowLevel()->getDate();
 	wchar_t sTemp[512];
-	swprintf(sTemp, 512, _W("save/%ls/%ls %d-%02d-%02d_%02d.%02d.%02d_%02d.sav"),
+	swprintf(sTemp, 512, _W("%ls: %ls %d-%02d-%02d %02d:%02d:%02d"),
 			 asDir.c_str(),
 			 sMapName.c_str(),
 			 date.year,
@@ -614,8 +620,7 @@ void cSaveHandler::AutoSave(const tWString &asDir, int alMaxSaves) {
 			 date.month_day,
 			 date.hours,
 			 date.minutes,
-			 date.seconds,
-			 cMath::RandRectl(0, 99));
+			 date.seconds);
 	tWString sFile = sTemp;
 	SaveGameToFile(sFile);
 
@@ -625,10 +630,8 @@ void cSaveHandler::AutoSave(const tWString &asDir, int alMaxSaves) {
 //-----------------------------------------------------------------------
 
 void cSaveHandler::AutoLoad(const tWString &asDir) {
-	tWString sFile = GetLatest(_W("save/") + asDir, _W("*.sav"));
-
-	LoadGameFromFile(_W("save/") + asDir + _W("/") + sFile);
-
+	tWString latestSave = GetLatest( asDir + _W(":*"));
+	LoadGameFromFile(latestSave);
 	mpInit->mpGame->ResetLogicTimer();
 }
 
@@ -667,58 +670,46 @@ void cSaveHandler::OnExit() {
 
 //-----------------------------------------------------------------------
 
-void cSaveHandler::DeleteOldestIfMax(const tWString &asDir, const tWString &asMask, int alMaxFiles) {
-	LowLevelResources *pLowLevelResources = mpInit->mpGame->GetResources()->GetLowLevel();
-	LowLevelSystem *pLowLevelSystem = mpInit->mpGame->GetSystem()->GetLowLevel();
+cDate cSaveHandler::parseDate(const Common::String &saveFile) {
+	cDate date;
+	auto firstDigit = Common::find_if(saveFile.begin(), saveFile.end(), Common::isDigit);
+	Common::String strDate = saveFile.substr(Common::distance(saveFile.begin(), firstDigit));
+	sscanf(strDate.c_str(), "%d-%d-%d %d:%d:%d", &date.year, &date.month, &date.month_day, &date.hours, &date.minutes, &date.seconds);
+	return date;
+}
 
-	tWString sPath = msSaveDir + asDir;
-
-	tStringList lstFiles;
-	pLowLevelResources->findFilesInDir(lstFiles, cString::To8Char(sPath), cString::To8Char(asMask));
-
-	// If there are too many files, remove oldest.
-	if ((int)lstFiles.size() >= alMaxFiles) {
-		tString sOldest = "";
-		cDate oldestDate;
-
-		tStringListIt it = lstFiles.begin();
-		for (; it != lstFiles.end(); ++it) {
-			cDate date = FileModifiedDate(sPath + _W("/") + cString::To16Char(*it));
-			if (sOldest == "" || oldestDate > date) {
-				sOldest = *it;
-				oldestDate = date;
-			}
+template<typename DateCmp>
+Common::String firstSave(const Common::StringArray &saves, DateCmp cmp) {
+	if (saves.empty())
+		return "";
+	cDate latestDate = cSaveHandler::parseDate(saves.front());
+	const Common::String* latestSave = &saves.front();
+	for (auto it = saves.begin() + 1; it != saves.end(); ++it) {
+		cDate d = cSaveHandler::parseDate(*it);
+		if (cmp(d, latestDate)) {
+			latestDate = d;
+			latestSave = it;
 		}
+	}
+	return *latestSave;
+}
 
-		RemoveFile(sPath + _W("/") + cString::To16Char(sOldest));
+void cSaveHandler::DeleteOldestIfMax(const tWString &asDir, const tWString &asMask, int alMaxFiles) {
+	return;
+	const Common::StringArray saves = Hpl1::g_engine->listInternalSaves(cString::To8Char(asDir + asMask).c_str());
+	if (static_cast<int>(saves.size()) > alMaxFiles) {
+		const Common::String oldest = firstSave(saves, [](const cDate& a, const cDate &b){return a < b;});
+		Hpl1::logInfo(Hpl1::kDebugSaves, "removing save %s\n", oldest.c_str());
+		Hpl1::g_engine->removeSaveFile(oldest);
 	}
 }
 
 //-----------------------------------------------------------------------
 
-tWString cSaveHandler::GetLatest(const tWString &asDir, const tWString &asMask) {
-	LowLevelResources *pLowLevelResources = mpInit->mpGame->GetResources()->GetLowLevel();
-	LowLevelSystem *pLowLevelSystem = mpInit->mpGame->GetSystem()->GetLowLevel();
-
-	tWString sPath = msSaveDir + asDir;
-
-	tStringList lstFiles;
-	pLowLevelResources->findFilesInDir(lstFiles, cString::To8Char(sPath), cString::To8Char(asMask));
-
-	tWString sNewest = _W("");
-	cDate newestDate;
-
-	tStringListIt it = lstFiles.begin();
-	for (; it != lstFiles.end(); ++it) {
-		tWString sFile = cString::To16Char(*it);
-		cDate date = FileModifiedDate(sPath + _W("/") + sFile);
-		if (sNewest == _W("") || newestDate < date) {
-			sNewest = sFile;
-			newestDate = date;
-		}
-	}
-
-	return sNewest;
+tWString cSaveHandler::GetLatest(const tWString &asMask) {
+	// FIXME: string types
+	Common::StringArray saves = Hpl1::g_engine->listInternalSaves(cString::To8Char(asMask).c_str());
+	return cString::To16Char(firstSave(saves, [](const cDate& a, const cDate &b){return a > b;}).c_str());
 }
 
 //-----------------------------------------------------------------------

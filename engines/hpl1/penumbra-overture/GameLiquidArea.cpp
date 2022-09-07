@@ -172,7 +172,7 @@ void cGameLiquidArea::Update(float afTimeStep) {
 	while (bodyIt.HasNext()) {
 		iPhysicsBody *pBody = static_cast<iPhysicsBody *>(bodyIt.Next());
 
-		iGameEntity *pEntity = (iGameEntity *)pBody->GetUserData();
+		/*iGameEntity *pEntity = */(iGameEntity *)pBody->GetUserData();
 
 		if (pBody->GetCollide() && pBody->IsActive()) {
 			if (pBody->GetMass() == 0 && pBody->IsCharacter() == false)
@@ -381,6 +381,5 @@ void cGameLiquidArea::LoadFromSaveData(iGameEntity_SaveData *apSaveData) {
 
 void cGameLiquidArea::SetupSaveData(iGameEntity_SaveData *apSaveData) {
 	super::SetupSaveData(apSaveData);
-	cGameLiquidArea_SaveData *pData = static_cast<cGameLiquidArea_SaveData *>(apSaveData);
 }
 //-----------------------------------------------------------------------

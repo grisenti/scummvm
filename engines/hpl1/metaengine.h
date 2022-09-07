@@ -37,6 +37,10 @@ public:
 	 * Used by e.g. the launcher to determine whether to enable the Load button.
 	 */
 	bool hasFeature(MetaEngineFeature f) const override;
+
+	void getSavegameThumbnail(Graphics::Surface &thumbnail) override;
+
+	Common::Array<Common::Keymap *> initKeymaps(const char *target) const override;
 };
 
 #endif

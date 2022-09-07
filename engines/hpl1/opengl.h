@@ -26,9 +26,20 @@
 #define USE_GLAD
 #include "graphics/opengl/system_headers.h"
 #include "graphics/opengl/context.h"
+#include "common/ptr.h"
+
+namespace Graphics {
+
+struct Surface;
+
+}
 
 namespace Hpl1 {
-	void checkOGLErrors(const char *function, int line);
+
+void checkOGLErrors(const char *function, int line);
+
+Common::ScopedPtr<Graphics::Surface> createViewportScreenshot();
+
 }
 
 #define GL_CHECK(x) {x; ::Hpl1::checkOGLErrors(__func__, __LINE__);}

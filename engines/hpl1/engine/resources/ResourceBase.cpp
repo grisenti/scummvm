@@ -28,6 +28,7 @@
 #include "hpl1/engine/resources/ResourceBase.h"
 
 #include "hpl1/engine/system/low_level_system.h"
+#include "hpl1/hpl1.h"
 
 namespace hpl {
 
@@ -39,7 +40,7 @@ bool iResourceBase::mbLogCreateAndDelete = false;
 
 //-----------------------------------------------------------------------
 iResourceBase::iResourceBase(tString asName, unsigned long alPrio) {
-	mlTime = 0; //(unsigned long)time(NULL);
+	mlTime = 0;
 	mlPrio = alPrio;
 	mlHandle = 0;
 	mlUserCount = 0;
@@ -55,7 +56,7 @@ iResourceBase::~iResourceBase() {
 
 void iResourceBase::IncUserCount() {
 	mlUserCount++;
-	mlTime = 0; //(unsigned long)time(NULL);
+	mlTime = Hpl1::g_engine->getTotalPlayTime();
 }
 
 //-----------------------------------------------------------------------

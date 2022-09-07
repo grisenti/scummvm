@@ -21,6 +21,7 @@
 
 #include "hpl1/engine/impl/SqScript.h"
 #include "hpl1/engine/libraries/angelscript/add-ons/scriptstdstring.h"
+#include "hpl1/engine/libraries/angelscript/add-ons/scriptarray.h"
 #include "hpl1/engine/libraries/angelscript/angelscript.h"
 #include "hpl1/engine/system/String.h"
 
@@ -33,6 +34,7 @@ namespace hpl {
 
 LowLevelSystem::LowLevelSystem() {
 	_scriptEngine = asCreateScriptEngine(ANGELSCRIPT_VERSION);
+	RegisterScriptArray(_scriptEngine, true);
 	_scriptOutput = hplNew(cScriptOutput, ());
 	_scriptEngine->SetMessageCallback(asMETHOD(cScriptOutput, AddMessage), _scriptOutput, asCALL_THISCALL);
 	RegisterStdString(_scriptEngine);
@@ -53,7 +55,7 @@ LowLevelSystem::~LowLevelSystem() {
 static void commonLog(int level, const char *fmt, va_list args) {
 	char buffer[256];
 	vsnprintf(buffer, 256, fmt, args);
-	debugN(level, buffer);
+	debugN(level, "%s", buffer);
 }
 
 void Error(const char *fmt, ...) {
@@ -127,7 +129,7 @@ void CreateMessageBoxW(const wchar_t *caption, const wchar_t *fmt, ...) {
 
 //-----------------------------------------------------------------------
 
-static cDate DateFromGMTIme(struct tm *apClock) {
+/*static cDate DateFromGMTIme(struct tm *apClock) {
 	cDate date;
 
 	date.seconds = apClock->tm_sec;
@@ -140,7 +142,7 @@ static cDate DateFromGMTIme(struct tm *apClock) {
 	date.year_day = apClock->tm_yday;
 
 	return date;
-}
+}*/
 
 //-----------------------------------------------------------------------
 
@@ -366,7 +368,9 @@ unsigned long LowLevelSystem::getTime() {
 }
 
 cDate LowLevelSystem::getDate() {
-	return {};
+	TimeDate td;
+	g_system->getTimeAndDate(td);
+	return {td.tm_sec, td.tm_min, td.tm_hour, td.tm_mday, td.tm_mon, td.tm_year - 100, td.tm_wday, 0};
 }
 
 iScript *LowLevelSystem::createScript(const tString &name) {

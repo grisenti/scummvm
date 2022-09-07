@@ -36,17 +36,16 @@ void main()
 
 	//Calculate rotation for light to get it to tangent space.
 	vec3 binormal = cross(normal,tangent.xyz)*tangent.w;
-	mat3 rotation = mat3(tangent.xyz, binormal, normal);
+	mat3 rotation = transpose(mat3(tangent.xyz, binormal, normal));
 
 	//Transform the lightdir
 	vLightDir = (rotation * vLightDir);
 
 	//Get the halfvector for the specular term
 	vHalfVec = normalize(EyePos - position.xyz);
-	//vHalfVec = normalize( normalize(EyePos) +  normalize(lightDir));
 	//transform to tangent space
 	vHalfVec = (rotation * vHalfVec);
-	vHalfVec = normalize(vLightDir)+vHalfVec;//normalize(vHalfVec + normalize(vLightDir));
+	vHalfVec = normalize(vLightDir)+vHalfVec;
 
-	vLightColor = LightColor;
+	vLightColor = clamp(LightColor, vec4(0.0), vec4(1.0));
 }

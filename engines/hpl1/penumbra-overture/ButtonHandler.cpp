@@ -107,7 +107,7 @@ static cButtonHandlerAction gvDefaultActions[] = {
 #ifdef __APPLE__
 	{"QuitGame", "Keyboard", eKeyModifier_META | eKey_q, false},
 #endif
-	//{"LockInput","Keyboard",eKey_k,false},
+	{"LockInput","Keyboard",eKey_k, true},
 	{"Screenshot", "Keyboard", eKey_F12, false},
 
 	//{"Hit","Keyboard",eKey_h,false},
@@ -115,7 +115,8 @@ static cButtonHandlerAction gvDefaultActions[] = {
 	//{"Taunt","Keyboard",eKey_t,false},
 	{"PrintLog", "Keyboard", eKey_l, false},
 
-	{"", "", 0}};
+	{"", "", 0, false}
+};
 
 //////////////////////////////////////////////////////////////////////////
 // CONSTRUCTORS

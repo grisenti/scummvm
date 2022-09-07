@@ -254,6 +254,7 @@ void cSoundEntity::FadeIn(float afSpeed) {
 
 void cSoundEntity::FadeOut(float afSpeed) {
 	mbFadingOut = true;
+	_fadeSpeed = afSpeed;
 	if (mpSoundHandler->GetSilent())
 		return;
 
@@ -420,6 +421,8 @@ void cSoundEntity::UpdateLogic(float afTimeStep) {
 					}
 
 					mvSounds[eSoundEntityType_Main] = NULL;
+					if (mbFadingOut)
+						mbStopped = true;
 				}
 
 				mbOutOfRange = true;

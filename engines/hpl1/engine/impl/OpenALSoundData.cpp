@@ -39,8 +39,8 @@ namespace hpl {
 
 //-----------------------------------------------------------------------
 
-cOpenALSoundData::cOpenALSoundData(tString asName, bool abStream)
-	: iSoundData(asName, abStream) {
+cOpenALSoundData::cOpenALSoundData(tString asName, bool abStream, cLowLevelSoundOpenAL *lowLevelSound)
+	: iSoundData(asName, abStream), _lowLevelSound(lowLevelSound) {
 }
 
 //-----------------------------------------------------------------------
@@ -57,8 +57,6 @@ cOpenALSoundData::~cOpenALSoundData() {
 //-----------------------------------------------------------------------
 
 bool cOpenALSoundData::CreateFromFile(const tString &filename) {
-	if (_filename != "")
-		error("trying to load a sample"); // FIXME: remove this if its not needed
 	// FIXME: string types
 	_filename = filename.c_str();
 	return true;
@@ -66,9 +64,9 @@ bool cOpenALSoundData::CreateFromFile(const tString &filename) {
 
 //-----------------------------------------------------------------------
 
-iSoundChannel *cOpenALSoundData::CreateChannel(int alPriority) {
+iSoundChannel *cOpenALSoundData::CreateChannel(int priority) {
 	IncUserCount();
-	return hplNew(cOpenALSoundChannel, (this, Audio::SeekableAudioStream::openStreamFile(_filename.substr(0, _filename.size() - 4)), mpSoundManger));
+	return hplNew(cOpenALSoundChannel, (this, Audio::SeekableAudioStream::openStreamFile(_filename.substr(0, _filename.size() - 4)), mpSoundManger, _lowLevelSound, priority));
 }
 
 } // namespace hpl

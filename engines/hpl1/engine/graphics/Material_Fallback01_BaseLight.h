@@ -31,7 +31,6 @@
 #include "hpl1/engine/graphics/GPUProgram.h"
 #include "hpl1/engine/graphics/Material.h"
 #include "hpl1/engine/scene/Light3D.h"
-#include <vector>
 
 #include "hpl1/engine/graphics/Material_BaseLight.h"
 
@@ -53,11 +52,11 @@ public:
 
 	bool UsesType(eMaterialRenderType aType);
 
-	iGpuProgram *GetVertexProgram(eMaterialRenderType aType, int alPass, iLight3D *apLight);
+	iGpuProgram *getGpuProgram(const eMaterialRenderType aType, const int alPass, iLight3D *apLight);
+	iMaterialProgramSetup *getGpuProgramSetup(const eMaterialRenderType aType, const int alPass, iLight3D *apLight);
+
 	bool VertexProgramUsesLight(eMaterialRenderType aType, int alPass, iLight3D *apLight);
 	bool VertexProgramUsesEye(eMaterialRenderType aType, int alPass, iLight3D *apLight);
-
-	iGpuProgram *GetFragmentProgram(eMaterialRenderType aType, int alPass, iLight3D *apLight);
 
 	eMaterialAlphaMode GetAlphaMode(eMaterialRenderType aType, int alPass, iLight3D *apLight);
 	eMaterialBlendMode GetBlendMode(eMaterialRenderType aType, int alPass, iLight3D *apLight);
@@ -92,99 +91,10 @@ protected:
 
 	iTexture *mpAttenuationMap;
 
-	iGpuProgram *_shaders[eBaseLightProgram_LastEnum];
-	iGpuProgram *mvVtxPrograms[eBaseLightProgram_LastEnum];
-	iGpuProgram *mvFragPrograms[eBaseLightProgram_LastEnum];
+	iGpuProgram *_programs[eBaseLightProgram_LastEnum];
+	iGpuProgram *_diffuseShader;
+	iGpuProgram *_ambientShader;
 };
-
-//---------------------------------------------------------------
-
-class cGLState_Diffuse : public iGLStateProgram {
-public:
-	cGLState_Diffuse();
-
-	void Bind();
-	void UnBind();
-
-private:
-	void InitData() {}
-};
-
-//---------------------------------------------------------------
-
-class cGLState_ATIDiffuse : public iGLStateProgram {
-public:
-	cGLState_ATIDiffuse();
-	~cGLState_ATIDiffuse();
-
-	void Bind();
-	void UnBind();
-
-private:
-	void InitData();
-
-	int mlBind;
-};
-
-//---------------------------------------------------------------
-
-class cGLState_Bump : public iGLStateProgram {
-public:
-	cGLState_Bump();
-
-	void Bind();
-	void UnBind();
-
-private:
-	void InitData() {}
-};
-
-//---------------------------------------------------------------
-
-class cGLState_ATIBump : public iGLStateProgram {
-public:
-	cGLState_ATIBump();
-	~cGLState_ATIBump();
-
-	void Bind();
-	void UnBind();
-
-private:
-	void InitData();
-
-	int mlBind;
-};
-
-//---------------------------------------------------------------
-
-class cGLState_Spot : public iGLStateProgram {
-public:
-	cGLState_Spot();
-
-	void Bind();
-	void UnBind();
-
-private:
-	void InitData() {}
-};
-
-//---------------------------------------------------------------
-
-class cGLState_ATISpot : public iGLStateProgram {
-public:
-	cGLState_ATISpot();
-	~cGLState_ATISpot();
-
-	void Bind();
-	void UnBind();
-
-private:
-	void InitData();
-
-	int mlBind;
-};
-
-//---------------------------------------------------------------
 
 ///////////////////////////////////////////
 // Diffuse
@@ -220,5 +130,6 @@ public:
 
 //---------------------------------------------------------------
 
-};     // namespace hpl
+}     // namespace hpl
+
 #endif // HPL_MATERIAL_FALLBACK01_BASE_LIGHT_H

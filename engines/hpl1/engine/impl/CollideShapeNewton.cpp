@@ -56,32 +56,34 @@ cCollideShapeNewton::cCollideShapeNewton(eCollideShapeType aType, const cVector3
 		mtxTranspose = m_mtxOffset.GetTranspose();
 
 		pMtx = &(mtxTranspose.m[0][0]);
-	} else
+	} else {
 		m_mtxOffset = cMatrixf::Identity;
+	}
 
-		////////////////////////////////////////////
-		// Create Newton collision
+	////////////////////////////////////////////
+	// Create Newton collision
 
-  		switch(aType)
-		{
-		case eCollideShapeType_Null:		mpNewtonCollision = NewtonCreateNull(apNewtonWorld); break;
+  	switch(aType) {
+	case eCollideShapeType_Null:		mpNewtonCollision = NewtonCreateNull(apNewtonWorld); break;
 
-		case eCollideShapeType_Box:			mpNewtonCollision = NewtonCreateBox(apNewtonWorld,
-												mvSize.x, mvSize.y, mvSize.z,
-												0, pMtx); break;
+	case eCollideShapeType_Box:			mpNewtonCollision = NewtonCreateBox(apNewtonWorld,
+											mvSize.x, mvSize.y, mvSize.z,
+											0, pMtx); break;
 
-		case eCollideShapeType_Sphere:		mpNewtonCollision = NewtonCreateSphere(apNewtonWorld,
-												mvSize.x, mvSize.y, mvSize.z,
-												0, pMtx); break;
+	case eCollideShapeType_Sphere:		mpNewtonCollision = NewtonCreateSphere(apNewtonWorld,
+											mvSize.x, mvSize.x, mvSize.x,
+											0, pMtx); break;
 
-		case eCollideShapeType_Cylinder:	mpNewtonCollision = NewtonCreateCylinder(apNewtonWorld,
-												mvSize.x, mvSize.y,
-												0, pMtx); break;
+	case eCollideShapeType_Cylinder:	mpNewtonCollision = NewtonCreateCylinder(apNewtonWorld,
+											mvSize.x, mvSize.y,
+											0, pMtx); break;
 
-		case eCollideShapeType_Capsule:		mpNewtonCollision = NewtonCreateCapsule(apNewtonWorld,
-												mvSize.x, mvSize.y,
-												0, pMtx); break;
-		}
+	case eCollideShapeType_Capsule:		mpNewtonCollision = NewtonCreateCapsule(apNewtonWorld,
+											mvSize.x, mvSize.y,
+											0, pMtx); break;
+	default:
+		break;
+	}
 
 	////////////////////////////////////////////
 	// Calculate Bounding volume and volume.
@@ -256,11 +258,7 @@ void cCollideShapeNewton::CreateFromVertices(const unsigned int *apIndexArray, i
 											 const float *apVertexArray, int alVtxStride, int alVtxNum) {
 	float vTriVec[9];
 
-	bool bOptimize = false;
-	bool bCreatedPlane = false;
-	cPlanef plane;
-
-	mpNewtonCollision = NewtonCreateTreeCollision(mpNewtonWorld, NULL);
+	mpNewtonCollision = NewtonCreateTreeCollision(mpNewtonWorld, 0);
 	// Log("-- Creating mesh collision.:\n");
 	NewtonTreeCollisionBeginBuild(mpNewtonCollision);
 	for (int tri = 0; tri < alIndexNum; tri += 3) {
@@ -273,34 +271,10 @@ void cCollideShapeNewton::CreateFromVertices(const unsigned int *apIndexArray, i
 			vTriVec[idx * 3 + 2] = apVertexArray[lVtx + 2];
 		}
 
-		if (bOptimize == false) {
-			cPlanef tempPlane;
-			cVector3f vP1(vTriVec[0 + 0], vTriVec[0 + 1], vTriVec[0 + 2]);
-			cVector3f vP2(vTriVec[1 * 3 + 0], vTriVec[1 * 3 + 1], vTriVec[1 * 3 + 2]);
-			cVector3f vP3(vTriVec[2 * 3 + 0], vTriVec[2 * 3 + 1], vTriVec[2 * 3 + 2]);
-
-			tempPlane.FromPoints(vP1, vP2, vP3);
-
-			// Log("P1: %s P2: %s P3: %s\n",vP1.ToString().c_str(),vP2.ToString().c_str(),vP3.ToString().c_str());
-			// Log("Plane: a: %f b: %f c: %f d: %f\n",tempPlane.a,tempPlane.b,tempPlane.c,tempPlane.d);
-
-			if (bCreatedPlane == false) {
-				plane = tempPlane;
-				bCreatedPlane = true;
-			} else {
-				if (std::abs(plane.a - tempPlane.a) > 0.001f ||
-					std::abs(plane.b - tempPlane.b) > 0.001f ||
-					std::abs(plane.c - tempPlane.c) > 0.001f ||
-					std::abs(plane.d - tempPlane.d) > 0.001f) {
-					bOptimize = true;
-				}
-			}
-		}
-
 		NewtonTreeCollisionAddFace(mpNewtonCollision, 3, vTriVec, sizeof(float) * 3, 1);
 	}
 
-	NewtonTreeCollisionEndBuild(mpNewtonCollision, bOptimize ? 1 : 0);
+	NewtonTreeCollisionEndBuild(mpNewtonCollision, false);
 
 	// Set bounding box size
 	mBoundingVolume.AddArrayPoints(apVertexArray, alVtxNum);

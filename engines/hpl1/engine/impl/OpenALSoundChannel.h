@@ -40,9 +40,12 @@
 
 namespace hpl {
 
+class cLowLevelSoundOpenAL;
+
 class cOpenALSoundChannel : public iSoundChannel {
+	friend class cLowLevelSoundOpenAL;
 public:
-	cOpenALSoundChannel(cOpenALSoundData *soundData, Audio::SeekableAudioStream* audioStream, cSoundManager *apSoundManger);
+	cOpenALSoundChannel(cOpenALSoundData *soundData, Audio::SeekableAudioStream* audioStream, cSoundManager *apSoundManger, cLowLevelSoundOpenAL *lowLevelSound, int priority);
 	~cOpenALSoundChannel();
 
 	void Play();
@@ -80,12 +83,15 @@ private:
 	void restart();
 
 	Audio::SoundHandle _handle;
-	bool _playing;
-	Audio::SeekableAudioStream* _audioStream;
-	int mlDefaultFreq;
+	Audio::SeekableAudioStream *_audioStream;
+	cLowLevelSoundOpenAL *_lowLevelSound;
+	int _priority;
+	//int mlDefaultFreq;
 
-	float mfPosition[3];
-	float mfVelocity[3];
+	//float mfPosition[3];
+	//float mfVelocity[3];
 };
-};     // namespace hpl
+
+}     // namespace hpl
+
 #endif // HPL_OPENAL_CHANNEL_H

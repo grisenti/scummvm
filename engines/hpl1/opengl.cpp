@@ -21,23 +21,52 @@
 
 #include "hpl1/opengl.h"
 #include "hpl1/debug.h"
+#include "common/rect.h"
+#include "graphics/surface.h"
+#include "common/system.h"
 
 namespace Hpl1 {
-	static const char* getErrorString(const GLenum code) {
-		switch (code) {
-		case GL_INVALID_ENUM:
-			return "invalid enum";
-		case GL_INVALID_VALUE:
-			return "invalid value";
-		case GL_INVALID_OPERATION:
-			return "invalid operation";
-		}
-		return "unrecognized error";
-	}
 
-	void checkOGLErrors(const char *function, const int line) {
-		GLenum code;
-		while((code = glGetError()) != GL_NO_ERROR)
-			logError(kDebugOpenGL, "Opengl error: \'%s\' in function %s - %d", getErrorString(code), function, line);
+static const char* getErrorString(const GLenum code) {
+	switch (code) {
+	case GL_INVALID_ENUM:
+		return "invalid enum";
+	case GL_INVALID_VALUE:
+		return "invalid value";
+	case GL_INVALID_OPERATION:
+		return "invalid operation";
 	}
+	return "unrecognized error";
 }
+
+void checkOGLErrors(const char *function, const int line) {
+	GLenum code;
+	while((code = glGetError()) != GL_NO_ERROR)
+		logError(kDebugOpenGL, "Opengl error: \'%s\' in function %s - %d\n", getErrorString(code), function, line);
+}
+
+
+static Common::Rect getGLViewport() {
+	int viewportSize[4];
+	GL_CHECK(glGetIntegerv(GL_VIEWPORT, viewportSize));
+	return Common::Rect(viewportSize[0], viewportSize[1], viewportSize[2], viewportSize[3]);
+}
+
+static Graphics::PixelFormat getRGBAPixelFormat() {
+#ifdef SCUMM_BIG_ENDIAN
+	return Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0);
+#else
+	return Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
+#endif
+}
+
+Common::ScopedPtr<Graphics::Surface> createViewportScreenshot() {
+	Common::ScopedPtr<Graphics::Surface> screen(new Graphics::Surface());
+	Common::Rect viewportSize = getGLViewport();
+	screen->create(viewportSize.width(), viewportSize.height(), getRGBAPixelFormat());
+	GL_CHECK(glReadPixels(viewportSize.left, g_system->getHeight() - viewportSize.bottom, viewportSize.width(), viewportSize.height(), GL_RGBA, GL_UNSIGNED_BYTE, screen->getPixels()));
+	screen->flipVertical(Common::Rect(screen->w, screen->h));
+	return screen;
+}
+
+} // End of namespace Hpl1

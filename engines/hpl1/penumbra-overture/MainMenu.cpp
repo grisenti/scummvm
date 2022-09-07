@@ -37,6 +37,9 @@
 #include "hpl1/penumbra-overture/Player.h"
 #include "hpl1/penumbra-overture/PlayerHelper.h"
 #include "hpl1/penumbra-overture/SaveHandler.h"
+#include "hpl1/hpl1.h"
+#include "hpl1/debug.h"
+#include "common/savefile.h"
 
 
 float gfMenuFadeAmount;
@@ -498,7 +501,7 @@ void cMainMenuWidget_List::OnDraw() {
 		if ((int)i - mlFirstRow >= mlMaxRows)
 			break;
 
-		if (mlSelected == i) {
+		if (mlSelected ==(int)i) {
 			mpFont->draw(vPos, mvFontSize, cColor(0.95f, 1), eFontAlign_Left, mvEntries[i].c_str());
 			mpDrawer->DrawGfxObject(mpBackGfx, vPos + cVector3f(0, 2, -1),
 									cVector2f(mvSize.x - 5, mvFontSize.y),
@@ -631,29 +634,9 @@ void cMainMenuWidget_Continue::OnMouseDown(eMButton aButton) {
 
 	mpInit->mpMainMenu->SetActive(false);
 
-	tWString sAuto = _W("save/auto/") + mpInit->mpSaveHandler->GetLatest(_W("save/auto/"), _W("*.sav"));
-	tWString sSpot = _W("save/spot/") + mpInit->mpSaveHandler->GetLatest(_W("save/spot/"), _W("*.sav"));
-
-	tWString sFile = _W("");
-
-	if (sAuto == _W("save/auto/")) {
-		sFile = sSpot;
-	} else if (sSpot == _W("save/spot/")) {
-		sFile = sAuto;
-	} else {
-		tWString sSaveDir = mpInit->mpSaveHandler->GetSaveDir();
-		cDate dateAuto = FileModifiedDate(sSaveDir + sAuto);
-		cDate dateSpot = FileModifiedDate(sSaveDir + sSpot);
-
-		if (dateAuto > dateSpot) {
-			sFile = sAuto;
-		} else {
-			sFile = sSpot;
-		}
-	}
-
-	if (sFile != _W(""))
-		mpInit->mpSaveHandler->LoadGameFromFile(sFile);
+	tWString latestSave = mpInit->mpSaveHandler->GetLatest(_W("????:*"));
+	if (latestSave != _W(""))
+		mpInit->mpSaveHandler->LoadGameFromFile(latestSave);
 }
 
 //-----------------------------------------------------------------------
@@ -719,7 +702,7 @@ public:
 		if (mlSelected < 0)
 			return;
 
-		tWString sFile = msDir + _W("/") + gvSaveGameFileVec[mlNum][mlSelected];
+		tWString sFile = gvSaveGameFileVec[mlNum][mlSelected];
 
 		mpInit->mpMainMenu->SetActive(false);
 		mpInit->ResetGame(true);
@@ -776,10 +759,8 @@ public:
 		if (lSelected < 0)
 			return;
 
-		tWString sFile = mpInit->mpSaveHandler->GetSaveDir() + msDir +
-						 _W("/") + gvSaveGameFileVec[mlNum][lSelected];
-
-		RemoveFile(sFile);
+		tWString sFile = gvSaveGameFileVec[mlNum][lSelected];
+		Hpl1::g_engine->removeSaveFile(cString::To8Char(sFile).c_str());
 		mpInit->mpMainMenu->UpdateWidgets();
 	}
 
@@ -790,10 +771,8 @@ public:
 class cMainMenuWidget_FavoriteSaveGame : public cMainMenuWidget_Button {
 public:
 	cMainMenuWidget_FavoriteSaveGame(cInit *apInit, const cVector3f &avPos, const tWString &asText,
-									 cVector2f avFontSize, eFontAlign aAlignment,
-									 tWString asDir, int alNum)
+									 cVector2f avFontSize, eFontAlign aAlignment, int alNum)
 		: cMainMenuWidget_Button(apInit, avPos, asText, eMainMenuState_LastEnum, avFontSize, aAlignment) {
-		msDir = asDir;
 		mlNum = alNum;
 	}
 
@@ -802,17 +781,15 @@ public:
 		if (lSelected < 0)
 			return;
 
-		tWString sFile = mpInit->mpSaveHandler->GetSaveDir() + msDir +
-						 _W("/") + gvSaveGameFileVec[mlNum][lSelected];
-
-		tWString sDest = mpInit->mpSaveHandler->GetSaveDir() + _W("save/favorite/") +
-						 gvSaveGameFileVec[mlNum][lSelected];
-
-		CloneFile(sFile, sDest, true);
+		tWString originalName = gvSaveGameFileVec[mlNum][lSelected];
+		tWString newName = _W("favorite-") + cString::SubW(originalName, originalName.find_first_of('.') + 1);
+		Hpl1::logInfo(Hpl1::kDebugSaves, "adding save %s to favourites\n", cString::To8Char(newName).c_str());
+		Common::String originalFile(Hpl1::g_engine->mapInternalSaveToFile(cString::To8Char(originalName).c_str()));
+		Common::String newFile(Hpl1::g_engine->createSaveFile(cString::To8Char(newName).c_str()));
+		g_engine->getSaveFileManager()->copySavefile(originalFile, newFile);
 		mpInit->mpMainMenu->UpdateWidgets();
 	}
 
-	tWString msDir;
 	int mlNum;
 };
 
@@ -986,99 +963,6 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
-// OPTIONS SOUND
-//////////////////////////////////////////////////////////////////////////
-
-cMainMenuWidget_Text *gpSoundVolumeText = NULL;
-cMainMenuWidget_Text *gpSoundHardwareText = NULL;
-cMainMenuWidget_Text *gpSoundOutputDevice = NULL;
-
-class cMainMenuWidget_SoundVolume : public cMainMenuWidget_Button {
-public:
-	cMainMenuWidget_SoundVolume(cInit *apInit, const cVector3f &avPos, const tWString &asText, cVector2f avFontSize, eFontAlign aAlignment)
-		: cMainMenuWidget_Button(apInit, avPos, asText, eMainMenuState_LastEnum, avFontSize, aAlignment) {
-		msTip = kTranslate("MainMenu", "TipSoundVolume");
-	}
-
-	void OnMouseDown(eMButton aButton) {
-		float fVolume = mpInit->mpGame->GetSound()->GetLowLevel()->GetVolume();
-
-		if (aButton == eMButton_Left) {
-			fVolume += 0.1f;
-			if (fVolume > 1.0f)
-				fVolume = 1.0f;
-		} else if (aButton == eMButton_Right) {
-			fVolume -= 0.1f;
-			if (fVolume < 0.0f)
-				fVolume = 0.0f;
-		}
-
-		mpInit->mpGame->GetSound()->GetLowLevel()->SetVolume(fVolume);
-
-		char sTempVec[256];
-		sprintf(sTempVec, "%.0f", mpInit->mpGame->GetSound()->GetLowLevel()->GetVolume() * 100);
-		gpSoundVolumeText->msText = cString::To16Char(sTempVec);
-	}
-};
-
-class cMainMenuWidget_SoundHardware : public cMainMenuWidget_Button {
-public:
-	cMainMenuWidget_SoundHardware(cInit *apInit, const cVector3f &avPos, const tWString &asText, cVector2f avFontSize, eFontAlign aAlignment)
-		: cMainMenuWidget_Button(apInit, avPos, asText, eMainMenuState_LastEnum, avFontSize, aAlignment) {
-		msTip = kTranslate("MainMenu", "TipSoundHardware");
-	}
-
-	void OnMouseDown(eMButton aButton) {
-		mpInit->mbUseSoundHardware = !mpInit->mbUseSoundHardware;
-
-		gpSoundHardwareText->msText = mpInit->mbUseSoundHardware ? kTranslate("MainMenu", "On") : kTranslate("MainMenu", "Off");
-
-		gbMustRestart = true;
-	}
-};
-
-class cMainMenuWidget_SoundOutputDevice : public cMainMenuWidget_Button {
-public:
-	tStringVec mlDevices;
-
-	cMainMenuWidget_SoundOutputDevice(cInit *apInit, const cVector3f &avPos, const tWString &asText, cVector2f avFontSize, eFontAlign aAlignment)
-		: cMainMenuWidget_Button(apInit, avPos, asText, eMainMenuState_LastEnum, avFontSize, aAlignment) {
-		msTip = kTranslate("MainMenu", "TipSoundOutputDevice");
-#if 0
-		mlDevices = OAL_Info_GetOutputDevices();
-#endif
-	}
-
-	void OnMouseDown(eMButton aButton) {
-		int lCurrentNum = 0;
-
-		// get current num
-		for (int i = 0; i < mlDevices.size(); ++i) {
-			if (mlDevices[i] == mpInit->msDeviceName) {
-				lCurrentNum = i;
-				break;
-			}
-		}
-
-		if (aButton == eMButton_Left) {
-			lCurrentNum++;
-			if (lCurrentNum >= mlDevices.size())
-				lCurrentNum = 0;
-		} else if (aButton == eMButton_Right) {
-			lCurrentNum--;
-			if (lCurrentNum < 0)
-				lCurrentNum = mlDevices.size() - 1;
-		}
-
-		mpInit->msDeviceName = mlDevices[lCurrentNum];
-
-		gpSoundOutputDevice->msText = cString::To16Char(mpInit->msDeviceName);
-
-		gbMustRestart = true;
-	}
-};
-
-//////////////////////////////////////////////////////////////////////////
 // OPTIONS GAME
 //////////////////////////////////////////////////////////////////////////
 
@@ -1206,7 +1090,7 @@ public:
 	cMainMenuWidget_Language(cInit *apInit, const cVector3f &avPos, const tWString &asText, cVector2f avFontSize, eFontAlign aAlignment)
 		: cMainMenuWidget_Button(apInit, avPos, asText, eMainMenuState_LastEnum, avFontSize, aAlignment) {
 		tStringList lstStrings;
-		apInit->mpGame->GetResources()->GetLowLevel()->findFilesInDir(lstStrings, "config/", "*.lang");
+		apInit->mpGame->GetResources()->GetLowLevel()->findFilesInDir(lstStrings, "config", "*.lang");
 
 		mlCurrentFile = 0;
 		int lIdx = 0;
@@ -1775,7 +1659,7 @@ public:
 	}
 
 private:
-	cMainMenuWidget_Text *mpKeyWidget;
+	//cMainMenuWidget_Text *mpKeyWidget;
 	tString msActionName;
 };
 
@@ -2201,7 +2085,7 @@ void cMainMenu::SetActive(bool abX) {
 			mpInit->mpPlayer->GetHapticCamera()->SetActive(false);
 
 		if (!mpInit->mbFullScreen) {
-			mpInit->mpGame->GetInput()->GetLowLevel()->LockInput(false);
+			//mpInit->mpGame->GetInput()->GetLowLevel()->LockInput(false);
 		}
 
 		mpInit->mpGame->GetUpdater()->SetContainer("MainMenu");
@@ -2503,10 +2387,9 @@ void cMainMenu::CreateWidgets() {
 		AddWidgetToState(eMainMenuState_Start, hplNew(cMainMenuWidget_Resume, (mpInit, vPos, kTranslate("MainMenu", "Resume"))));
 		vPos.y += 60;
 	} else {
-		tWString sAuto = mpInit->mpSaveHandler->GetLatest(_W("save/auto/"), _W("*.sav"));
-		tWString sSpot = mpInit->mpSaveHandler->GetLatest(_W("save/spot/"), _W("*.sav"));
+		tWString latestSave = mpInit->mpSaveHandler->GetLatest(_W("????:*"));
 
-		if (sAuto != _W("") || sSpot != _W("")) {
+		if (latestSave != _W("")) {
 			AddWidgetToState(eMainMenuState_Start, hplNew(cMainMenuWidget_MainButton, (mpInit, vPos, kTranslate("MainMenu", "Continue"), eMainMenuState_Continue)));
 			vPos.y += 51;
 		}
@@ -2601,30 +2484,21 @@ void cMainMenu::CreateWidgets() {
 		vPos.y += 46 + 30;
 		vPos.x += 15;
 
-		tWString sDir = _W("save/spot");
+		tWString sDir = _W("spot:");
 		if (i == 1)
-			sDir = _W("save/auto");
+			sDir = _W("auto:");
 		else if (i == 2)
-			sDir = _W("save/favorite");
+			sDir = _W("favorite:");
 
 		gpSaveGameList[i] = hplNew(cMainMenuWidget_SaveGameList, (
 																	 mpInit, vPos, cVector2f(355, 170), 15, sDir, (int)i));
 		AddWidgetToState(state, gpSaveGameList[i]);
 
-		LowLevelResources *pLowLevelResources = mpInit->mpGame->GetResources()->GetLowLevel();
-		LowLevelSystem *pLowLevelSystem = mpInit->mpGame->GetSystem()->GetLowLevel();
-
-		tStringList lstFiles;
 		tTempFileAndDataSet setTempFiles;
-
-		tWString sFullPath = mpInit->mpSaveHandler->GetSaveDir() + sDir;
-		pLowLevelResources->findFilesInDir(lstFiles, cString::To8Char(sFullPath), "*.sav");
-
-		tStringListIt fileIt = lstFiles.begin();
-		for (; fileIt != lstFiles.end(); ++fileIt) {
-			tWString sFile = cString::To16Char(* fileIt);
-			cDate date = FileModifiedDate(sFullPath + _W("/") + sFile);
-
+		Common::StringArray saves = Hpl1::g_engine->listInternalSaves(cString::To8Char(sDir).c_str() + Common::String("*"));
+		for (auto &s : saves) {
+			tWString sFile = cString::To16Char(s.c_str());
+			cDate date = cSaveHandler::parseDate(s);
 			setTempFiles.insert(cTempFileAndData(sFile, date));
 		}
 
@@ -2638,12 +2512,7 @@ void cMainMenu::CreateWidgets() {
 
 			gvSaveGameFileVec[i].push_back(sFile);
 
-			sFile = cString::SetFileExtW(sFile, _W(""));
-			sFile = cString::SubW(sFile, 0, (int)sFile.length() - 3);
-			sFile = cString::ReplaceCharToW(sFile, _W("_"), _W(" "));
-			sFile = cString::ReplaceCharToW(sFile, _W("."), _W(":"));
-
-			// TODO: PROBLEM!!!
+			sFile = cString::SubW(sFile, sFile.find_first_of(_W(":")) + 1);
 			gpSaveGameList[i]->AddEntry(sFile);
 			// gpSaveGameList[i]->AddEntry(sFile);
 		}
@@ -2657,7 +2526,7 @@ void cMainMenu::CreateWidgets() {
 
 		vPos.x += 70;
 		if (i != 2)
-			AddWidgetToState(state, hplNew(cMainMenuWidget_FavoriteSaveGame, (mpInit, vPos, kTranslate("MainMenu", "Add To Favorites"), 17, eFontAlign_Left, sDir, (int)i)));
+			AddWidgetToState(state, hplNew(cMainMenuWidget_FavoriteSaveGame, (mpInit, vPos, kTranslate("MainMenu", "Add To Favorites"), 17, eFontAlign_Left, (int)i)));
 
 		vPos.x += 205;
 		AddWidgetToState(state, hplNew(cMainMenuWidget_RemoveSaveGame, (mpInit, vPos, kTranslate("MainMenu", "Remove"), 17, eFontAlign_Left, sDir, (int)i)));
@@ -2680,8 +2549,6 @@ void cMainMenu::CreateWidgets() {
 	AddWidgetToState(eMainMenuState_Options, hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Controls"), eMainMenuState_OptionsControls, 25, eFontAlign_Center)));
 	vPos.y += 37;
 	AddWidgetToState(eMainMenuState_Options, hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Game"), eMainMenuState_OptionsGame, 25, eFontAlign_Center)));
-	vPos.y += 37;
-	AddWidgetToState(eMainMenuState_Options, hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Sound"), eMainMenuState_OptionsSound, 25, eFontAlign_Center)));
 	vPos.y += 37;
 	AddWidgetToState(eMainMenuState_Options, hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Graphics"), eMainMenuState_OptionsGraphics, 25, eFontAlign_Center)));
 	vPos.y += 37;
@@ -2711,42 +2578,42 @@ void cMainMenu::CreateWidgets() {
 	if (mpInit->mbHapticsAvailable) {
 		vPos.y += 5;
 		// Use haptics
-		tWString sText = kTranslate("MainMenu", "Use Haptics:");
-		if (sText == _W(""))
-			sText = _W("Use Haptics:");
-		pWidgetUseHaptics = hplNew(cMainMenuWidget_UseHaptics, (mpInit, vPos, sText, 20, eFontAlign_Right));
+		tWString sText2 = kTranslate("MainMenu", "Use Haptics:");
+		if (sText2 == _W(""))
+			sText2 = _W("Use Haptics:");
+		pWidgetUseHaptics = hplNew(cMainMenuWidget_UseHaptics, (mpInit, vPos, sText2, 20, eFontAlign_Right));
 		AddWidgetToState(eMainMenuState_OptionsControls, pWidgetUseHaptics);
 		vPos.y += 29;
 
 		// Weight Force Scale
-		sText = kTranslate("MainMenu", "Weight Force Scale:");
-		if (sText == _W(""))
-			sText = _W("Weight Force Scale:");
-		pWidgetWeightForceScale = hplNew(cMainMenuWidget_WeightForceScale, (mpInit, vPos, sText, 20, eFontAlign_Right));
+		sText2 = kTranslate("MainMenu", "Weight Force Scale:");
+		if (sText2 == _W(""))
+			sText2 = _W("Weight Force Scale:");
+		pWidgetWeightForceScale = hplNew(cMainMenuWidget_WeightForceScale, (mpInit, vPos, sText2, 20, eFontAlign_Right));
 		AddWidgetToState(eMainMenuState_OptionsControls, pWidgetWeightForceScale);
 		vPos.y += 29;
 
 		// InteractMode camera speed
-		sText = kTranslate("MainMenu", "InteractMode Camera Speed:");
-		if (sText == _W(""))
-			sText = _W("InteractMode Camera Speed:");
-		pWidgetInteractModeCameraSpeed = hplNew(cMainMenuWidget_InteractModeCameraSpeed, (mpInit, vPos, sText, 20, eFontAlign_Right));
+		sText2 = kTranslate("MainMenu", "InteractMode Camera Speed:");
+		if (sText2 == _W(""))
+			sText2 = _W("InteractMode Camera Speed:");
+		pWidgetInteractModeCameraSpeed = hplNew(cMainMenuWidget_InteractModeCameraSpeed, (mpInit, vPos, sText2, 20, eFontAlign_Right));
 		AddWidgetToState(eMainMenuState_OptionsControls, pWidgetInteractModeCameraSpeed);
 		vPos.y += 29;
 
 		// ActionMode camera speed
-		sText = kTranslate("MainMenu", "ActionMode Camera Speed:");
-		if (sText == _W(""))
-			sText = _W("ActionMode Camera Speed:");
-		pWidgetActionModeCameraSpeed = hplNew(cMainMenuWidget_ActionModeCameraSpeed, (mpInit, vPos, sText, 20, eFontAlign_Right));
+		sText2 = kTranslate("MainMenu", "ActionMode Camera Speed:");
+		if (sText2 == _W(""))
+			sText2 = _W("ActionMode Camera Speed:");
+		pWidgetActionModeCameraSpeed = hplNew(cMainMenuWidget_ActionModeCameraSpeed, (mpInit, vPos, sText2, 20, eFontAlign_Right));
 		AddWidgetToState(eMainMenuState_OptionsControls, pWidgetActionModeCameraSpeed);
 		vPos.y += 29;
 
 		vPos.y += 5;
 	}
-	cMainMenuWidget *pWidgetChangeKeyConf = hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Change Key Mapping"), eMainMenuState_OptionsKeySetupMove, 20, eFontAlign_Center));
-	AddWidgetToState(eMainMenuState_OptionsControls, pWidgetChangeKeyConf);
-	vPos.y += 35;
+	// cMainMenuWidget *pWidgetChangeKeyConf = hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Change Key Mapping"), eMainMenuState_OptionsKeySetupMove, 20, eFontAlign_Center));
+	// AddWidgetToState(eMainMenuState_OptionsControls, pWidgetChangeKeyConf);
+	// vPos.y += 35;
 	AddWidgetToState(eMainMenuState_OptionsControls, hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Back"), eMainMenuState_Options, 23, eFontAlign_Center)));
 
 	// Text
@@ -2799,23 +2666,23 @@ void cMainMenu::CreateWidgets() {
 	///////////////////////////////////
 	for (int i = 0; i < 3; ++i) {
 		eMainMenuState state = (eMainMenuState)(i + eMainMenuState_OptionsKeySetupMove);
-		cVector3f vPos = vTextStart; // cVector3f(400, 260, 40);
+		cVector3f vPos2 = vTextStart; // cVector3f(400, 260, 40);
 		// Head
-		AddWidgetToState(state, hplNew(cMainMenuWidget_Text, (mpInit, vPos, kTranslate("MainMenu", "Configure Keys"), 25, eFontAlign_Center)));
-		vPos.y += 42;
-		vPos.x -= 110;
+		AddWidgetToState(state, hplNew(cMainMenuWidget_Text, (mpInit, vPos2, kTranslate("MainMenu", "Configure Keys"), 25, eFontAlign_Center)));
+		vPos2.y += 42;
+		vPos2.x -= 110;
 		// Buttons
-		AddWidgetToState(state, hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Movement"), eMainMenuState_OptionsKeySetupMove, 25, eFontAlign_Center)));
-		vPos.y += 32;
-		AddWidgetToState(state, hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Actions"), eMainMenuState_OptionsKeySetupAction, 25, eFontAlign_Center)));
-		vPos.y += 32;
-		AddWidgetToState(state, hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Misc"), eMainMenuState_OptionsKeySetupMisc, 25, eFontAlign_Center)));
+		AddWidgetToState(state, hplNew(cMainMenuWidget_Button, (mpInit, vPos2, kTranslate("MainMenu", "Movement"), eMainMenuState_OptionsKeySetupMove, 25, eFontAlign_Center)));
+		vPos2.y += 32;
+		AddWidgetToState(state, hplNew(cMainMenuWidget_Button, (mpInit, vPos2, kTranslate("MainMenu", "Actions"), eMainMenuState_OptionsKeySetupAction, 25, eFontAlign_Center)));
+		vPos2.y += 32;
+		AddWidgetToState(state, hplNew(cMainMenuWidget_Button, (mpInit, vPos2, kTranslate("MainMenu", "Misc"), eMainMenuState_OptionsKeySetupMisc, 25, eFontAlign_Center)));
 		// Back
-		vPos.y += 150;
-		vPos.x += 130;
-		AddWidgetToState(state, hplNew(cMainMenuWidget_KeyReset, (mpInit, vPos, kTranslate("MainMenu", "Reset to defaults"), 23, eFontAlign_Center)));
-		vPos.y += 32;
-		AddWidgetToState(state, hplNew(cMainMenuWidget_Button, (mpInit, vPos, kTranslate("MainMenu", "Back"), eMainMenuState_OptionsControls, 23, eFontAlign_Center)));
+		vPos2.y += 150;
+		vPos2.x += 130;
+		AddWidgetToState(state, hplNew(cMainMenuWidget_KeyReset, (mpInit, vPos2, kTranslate("MainMenu", "Reset to defaults"), 23, eFontAlign_Center)));
+		vPos2.y += 32;
+		AddWidgetToState(state, hplNew(cMainMenuWidget_Button, (mpInit, vPos2, kTranslate("MainMenu", "Back"), eMainMenuState_OptionsControls, 23, eFontAlign_Center)));
 	}
 
 	///////////////////////////////////
@@ -2826,7 +2693,7 @@ void cMainMenu::CreateWidgets() {
 	float fKeyTextXAdd = 195;
 
 	// Key buttons
-	cInput *pInput = mpInit->mpGame->GetInput();
+	/*cInput *pInput = */mpInit->mpGame->GetInput();
 	vPos = vTextStart; // cVector3f(400, 260, 40);
 	vPos.y += 46;
 	vPos.x += 15;
@@ -3060,52 +2927,6 @@ void cMainMenu::CreateWidgets() {
 	gpDisablePersonalText = hplNew(cMainMenuWidget_Text, (mpInit, vPos, sText, 20, eFontAlign_Left));
 	AddWidgetToState(eMainMenuState_OptionsGame, gpDisablePersonalText);
 	gpDisablePersonalText->SetExtraWidget(pWidgetDisablePersonal);
-
-	///////////////////////////////////
-	// Options Sound
-	///////////////////////////////////
-	vPos = vTextStart; // cVector3f(400, 230, 40);
-	// Head
-	AddWidgetToState(eMainMenuState_OptionsSound, hplNew(cMainMenuWidget_Text, (mpInit, vPos, kTranslate("MainMenu", "Sound"), 25, eFontAlign_Center)));
-	vPos.y += 37;
-
-	// Buttons
-	cMainMenuWidget *pWidgetSoundVolume = hplNew(cMainMenuWidget_SoundVolume, (mpInit, vPos, kTranslate("MainMenu", "Sound Volume:"), 20, eFontAlign_Right));
-	AddWidgetToState(eMainMenuState_OptionsSound, pWidgetSoundVolume);
-	vPos.y += 29;
-	cMainMenuWidget *pWidgetSoundHardware = hplNew(cMainMenuWidget_SoundHardware, (mpInit, vPos, kTranslate("MainMenu", "Use Hardware:"), 20, eFontAlign_Right));
-	AddWidgetToState(eMainMenuState_OptionsSound, pWidgetSoundHardware);
-	vPos.y += 29;
-	cMainMenuWidget *pWidgetSoundOutputDevice = hplNew(cMainMenuWidget_SoundOutputDevice, (mpInit, vPos, kTranslate("MainMenu", "Output Device:"), 20, eFontAlign_Right));
-	AddWidgetToState(eMainMenuState_OptionsSound, pWidgetSoundOutputDevice);
-	vPos.y += 35;
-	AddWidgetToState(eMainMenuState_OptionsSound, hplNew(cMainMenuWidget_GfxBack, (mpInit, vPos, kTranslate("MainMenu", "Back"), 23, eFontAlign_Center)));
-
-	// Text
-	vPos = cVector3f(vTextStart.x + 12, vTextStart.y + 37, vTextStart.z);
-
-	sprintf(sTempVec, "%.0f", mpInit->mpGame->GetSound()->GetLowLevel()->GetVolume() * 100);
-	sText = cString::To16Char(sTempVec);
-	gpSoundVolumeText = hplNew(cMainMenuWidget_Text, (mpInit, vPos, sText, 20, eFontAlign_Left));
-	AddWidgetToState(eMainMenuState_OptionsSound, gpSoundVolumeText);
-	gpSoundVolumeText->SetExtraWidget(pWidgetSoundVolume);
-
-	vPos.y += 29;
-	sText = mpInit->mbUseSoundHardware ? kTranslate("MainMenu", "On") : kTranslate("MainMenu", "Off");
-	gpSoundHardwareText = hplNew(cMainMenuWidget_Text, (mpInit, vPos, sText, 20, eFontAlign_Left));
-	AddWidgetToState(eMainMenuState_OptionsSound, gpSoundHardwareText);
-	gpSoundHardwareText->SetExtraWidget(pWidgetSoundHardware);
-
-	vPos.y += 29;
-	// Set the default to what's really being used
-#if 0
-	mpInit->msDeviceName = tString(OAL_Info_GetDeviceName());
-#endif
-
-	sText = cString::To16Char(mpInit->msDeviceName);
-	gpSoundOutputDevice = hplNew(cMainMenuWidget_Text, (mpInit, vPos, sText, 20, eFontAlign_Left));
-	AddWidgetToState(eMainMenuState_OptionsSound, gpSoundOutputDevice);
-	gpSoundOutputDevice->SetExtraWidget(pWidgetSoundOutputDevice);
 
 	///////////////////////////////////
 	// Options Graphics

@@ -221,8 +221,8 @@ void iPhysicsBody::UpdateAfterSimulate(float afTimeStep) {
 	if (HasSlide() == false) {
 		if (GetScrapeSoundEntity()) {
 			if (mlSlideCount <= 0) {
-				// Log("Stopped scrape %d on body '%s' IN BODY!\n", (size_t)GetScrapeSoundEntity(),
-				//												 GetName().c_str());
+				Log("Stopped scrape %d on body '%s' IN BODY!\n", (size_t)GetScrapeSoundEntity(),
+															 GetName().c_str());
 
 				if (mpWorld->GetWorld3D())
 					if (mpWorld->GetWorld3D()->SoundEntityExists(GetScrapeSoundEntity())) {
@@ -406,6 +406,12 @@ kBeginSerializeBase(cSaveData_iCollideShape)
 		return apWorld->CreateCylinderShape(apData->mvSize.x, apData->mvSize.y, &apData->m_mtxOffset);
 	case eCollideShapeType_Capsule:
 		return apWorld->CreateCapsuleShape(apData->mvSize.x, apData->mvSize.y, &apData->m_mtxOffset);
+	case eCollideShapeType_Null:
+	case eCollideShapeType_ConvexHull:
+	case eCollideShapeType_Mesh:
+	case eCollideShapeType_Compound:
+	case eCollideShapeType_LastEnum:
+		break;
 	}
 
 	Warning("Invalid shape type %d!\n", apData->mType);

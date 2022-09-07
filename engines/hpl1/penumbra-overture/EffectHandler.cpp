@@ -292,8 +292,6 @@ void cEffect_SaveEffect::NormalSaveUpdate(float afTimeStep) {
 		if (mfTime > 3.0f) {
 			mlState++;
 			mpInit->mpPlayer->GetCamera()->SetFOV(mfStartFov);
-
-			mpInit->mpSaveHandler->AutoSave(_W("spot"), 10);
 		}
 		break;
 	}
@@ -327,9 +325,13 @@ void cEffect_SaveEffect::NormalSaveUpdate(float afTimeStep) {
 
 		break;
 	}
-		///////////////////////
-		// State4
 	case 4: {
+		mfFlashAlpha = 0.f;
+		mFlashColor = cColor(0.f, 0.f);
+		mlState++;
+		break;
+	}
+	case 5: {
 		/////////////
 		// Reset all
 		mbActive = false;
@@ -339,18 +341,6 @@ void cEffect_SaveEffect::NormalSaveUpdate(float afTimeStep) {
 
 		/////////////
 		// Display message
-		int lLevel = 0;
-		int lMaxRand = 3;
-		if (mpInit->mpPlayer->mlStat_NumOfSaves > 0)
-			lLevel = 1;
-		if (mpInit->mpPlayer->mlStat_NumOfSaves > 5)
-			lLevel = 2;
-		else if (mpInit->mpPlayer->mlStat_NumOfSaves > 20)
-			lLevel = 3;
-
-		if (lLevel == 0)
-			lMaxRand = 1;
-
 		tString sEntry = "AfterSave_Default";
 		if (mpSaveArea->GetHasBeenUsed() == false) {
 			mpInit->mpPlayer->mlStat_NumOfSaves++;
@@ -368,8 +358,10 @@ void cEffect_SaveEffect::NormalSaveUpdate(float afTimeStep) {
 		mpInit->mpGameMessageHandler->SetBlackText(false);
 		mpInit->mpGameMessageHandler->Add(kTranslate("Save", sEntry));
 
+		mpInit->mpSaveHandler->AutoSave(_W("spot"), 10);
 		break;
 	}
+
 	}
 }
 
@@ -385,7 +377,6 @@ void cEffect_SaveEffect::AutoSaveUpdate(float afTimeStep) {
 		if (mfFlashAlpha > 0.75f) {
 			mfFlashAlpha = 0.75f;
 			mlState++;
-			mpInit->mpSaveHandler->AutoSave(_W("auto"), 5);
 			mpInit->mpPlayer->SetActive(true);
 		}
 		break;
@@ -405,9 +396,14 @@ void cEffect_SaveEffect::AutoSaveUpdate(float afTimeStep) {
 		///////////////////////
 		// State2
 	case 2: {
-		/////////////
-		// Reset all
-		mbActive = false;
+		mlState++;
+		mFlashColor = cColor(0.0, 0.0);
+		mfFlashAlpha = 0.f;
+		break;
+	}
+	case 3: {
+		Reset();
+		mpInit->mpSaveHandler->AutoSave(_W("auto"), 5);
 		break;
 	}
 	}

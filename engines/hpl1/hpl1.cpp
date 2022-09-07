@@ -19,6 +19,10 @@
  *
  */
 
+#include "hpl1/penumbra-overture/Init.h"
+#include "hpl1/penumbra-overture/MainMenu.h"
+#include "hpl1/penumbra-overture/SaveHandler.h"
+#include "hpl1/engine/system/String.h"
 #include "engine/engine.h"
 #include "hpl1/hpl1.h"
 #include "common/config-manager.h"
@@ -30,8 +34,9 @@
 #include "graphics/palette.h"
 #include "hpl1/console.h"
 #include "hpl1/detection.h"
-
-extern int hplMain(const hpl::tString &asCommandLine);
+#include "hpl1/debug.h"
+#include "audio/mixer.h"
+#include "common/savefile.h"
 
 namespace Hpl1 {
 
@@ -54,8 +59,87 @@ Common::String Hpl1Engine::getGameId() const {
 	return _gameDescription->gameId;
 }
 
+static Common::String getStartupSave(MetaEngine *meta, const char* target) {
+	if (ConfMan.hasKey("save_slot")) {
+		const int saveSlot = ConfMan.getInt("save_slot");
+		const SaveStateDescriptor saveInfo = meta->querySaveMetaInfos(target, saveSlot);
+		return saveInfo.getDescription();
+	}
+	return "";
+}
+
 Common::Error Hpl1Engine::run() {
-	hplMain("");
+	_gameInit = new cInit(); // TODO: remove allocation
+	if (!_gameInit->Init(getStartupSave(getMetaEngine(), _targetName.c_str()).c_str())) {
+		delete _gameInit;
+		return Common::kUnknownError; // TODO: better errors
+	};
+	_gameInit->Run();
+	_gameInit->Exit();
+	delete _gameInit;
+	return Common::kNoError;
+}
+
+void Hpl1Engine::pauseEngineIntern(bool pause) {
+	_mixer->pauseAll(pause);
+	g_system->lockMouse(!pause);
+	// if a save is deleted from the global main menu,
+	// it would still appear on the game's menu
+	if (!pause)
+		_gameInit->mpMainMenu->UpdateWidgets();
+}
+
+static Common::String freeSaveSlot(const Engine *engine, const int maxSaves) {
+	for (int i = 0; i < maxSaves; ++i) {
+		const Common::String name = engine->getSaveStateName(i);
+		if (!g_system->getSavefileManager()->exists(name))
+			return name;
+	}
+	return "";
+}
+
+Common::String Hpl1Engine::createSaveFile(const Common::String &internalName) {
+	const Common::String freeSlot = freeSaveSlot(this, getMetaEngine()->getMaximumSaveSlot());
+	if (freeSlot == "")
+		warning("game out of save slots");
+	return freeSlot;
+}
+
+static Common::String findSaveFile(const SaveStateList &saves, const Common::String &internalName) {
+	for (auto &s : saves) {
+		if(s.getDescription() == internalName)
+			return g_engine->getSaveStateName(s.getSaveSlot());
+	}
+	logWarning(kDebugSaves | kDebugFilePath, "save file for save %s does not exist", internalName.c_str());
+	return "";
+}
+
+void Hpl1Engine::removeSaveFile(const Common::String &internalName) {
+	Common::String filename = findSaveFile(g_engine->getMetaEngine()->listSaves(_targetName.c_str()), internalName);
+	if (filename != "")
+		_saveFileMan->removeSavefile(filename);
+}
+
+Common::String Hpl1Engine::mapInternalSaveToFile(const Common::String &internalName) {
+	return findSaveFile(g_engine->getMetaEngine()->listSaves(_targetName.c_str()), internalName);
+}
+
+Common::StringArray Hpl1Engine::listInternalSaves(const Common::String &pattern) {
+	Common::StringArray internalSaves;
+	SaveStateList saves = g_engine->getMetaEngine()->listSaves(_targetName.c_str());
+	for (auto &save : saves) {
+		const Common::String saveDesc = save.getDescription();
+		if (saveDesc.matchString(pattern))
+			internalSaves.push_back(saveDesc);
+	}
+	return internalSaves;
+}
+
+Common::Error Hpl1Engine::loadGameState(int slot) {
+	SaveStateDescriptor a = getMetaEngine()->querySaveMetaInfos(_targetName.c_str(), slot);
+	_gameInit->mpMainMenu->SetActive(false);
+	// FIXME: strings
+	_gameInit->mpSaveHandler->LoadGameFromFile(cString::To16Char(Common::String(a.getDescription()).c_str()));
 	return Common::kNoError;
 }
 

@@ -91,6 +91,9 @@ void iPhysicsController::Update(float afTimeStep) {
 	if (mpBody == NULL)
 		return;
 
+	if(msName == "still")
+	{int i = 1;}
+
 	cVector3f vInput = GetInputValue(mInputType);
 	// Get the local input.
 	if (mbUseInputMatrixFix == false ||
@@ -154,6 +157,8 @@ cVector3f iPhysicsController::GetInputValue(ePhysicsControllerInput aInput) {
 		return mpJoint ? mpJoint->GetAngle() : 0;
 	case ePhysicsControllerInput_JointDist:
 		return mpJoint ? mpJoint->GetDistance() : 0;
+	case ePhysicsControllerInput_LastEnum:
+		break;
 	}
 	return 0;
 }
@@ -191,6 +196,8 @@ void iPhysicsController::AddOutputValue(ePhysicsControllerOutput aOutput,
 	case ePhysicsControllerAxis_Z:
 		vVec.z = afVal;
 		break;
+	case ePhysicsControllerAxis_LastEnum:
+		break;
 	}
 
 	if (mbMulMassWithOutput)
@@ -206,6 +213,8 @@ void iPhysicsController::AddOutputValue(ePhysicsControllerOutput aOutput,
 	case ePhysicsControllerOutput_Force:
 		mpBody->AddForce(vVec);
 		break;
+	case ePhysicsControllerOutput_LastEnum:
+		break;
 	}
 }
 
@@ -219,6 +228,8 @@ float iPhysicsController::GetAxisValue(ePhysicsControllerAxis aAxis, const cVect
 		return avVec.y;
 	case ePhysicsControllerAxis_Z:
 		return avVec.z;
+	case ePhysicsControllerAxis_LastEnum:
+		break;
 	}
 	return 0;
 }

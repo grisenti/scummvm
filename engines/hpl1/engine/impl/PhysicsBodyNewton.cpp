@@ -376,11 +376,11 @@ bool cPhysicsBodyNewton::GetGravity() const {
 
 //-----------------------------------------------------------------------
 
-static iLowLevelGraphics *gpLowLevelGraphics;
+//static iLowLevelGraphics *gpLowLevelGraphics;
 static cColor gDebugColor;
 
 ////////////////////////////////////////////
-
+/*
 static void RenderDebugPolygon(const NewtonBody *apNewtonBody,
 							   int alVertexCount, const dFloat *apFaceVertex, int alId) {
 	int i;
@@ -395,7 +395,7 @@ static void RenderDebugPolygon(const NewtonBody *apNewtonBody,
 		vP0 = vP1;
 	}
 }
-
+*/
 ////////////////////////////////////////////
 
 void cPhysicsBodyNewton::RenderDebugGeometry(iLowLevelGraphics *apLowLevel, const cColor &aColor) {
@@ -476,6 +476,8 @@ void cPhysicsBodyNewton::OnUpdateCallback(const NewtonBody *apBody, float, int) 
 								   gravity, BuoyancyPlaneCallback,
 								   pRigidBody);
 	}
+	if (pRigidBody->GetName() == "verticaldoor01_doorShape")
+	{int i = 1;}
 
 	// Add forces from calls to Addforce(..), etc
 	VEC3_CONST_ARRAY(totForce, pRigidBody->mvTotalForce);

@@ -51,7 +51,7 @@ public:
 private:
 	tVertexVec mvVtx;
 	iMaterial *mpMat;
-	float mfZ;
+	//float mfZ;
 	bool mbIsImage;
 
 	tString msSourceFile;
@@ -59,5 +59,7 @@ private:
 
 typedef std::vector<cGfxObject> tGfxObjectVec;
 typedef tGfxObjectVec::iterator tGfxObjectVecIt;
-};     // namespace hpl
+
+}     // namespace hpl
+
 #endif // HPL_GFX_OBJECT_H

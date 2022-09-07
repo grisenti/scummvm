@@ -26,6 +26,7 @@
  */
 
 #include "hpl1/engine/impl/VertexBufferOGL.h"
+#include "hpl1/debug.h"
 #include "hpl1/engine/math/Math.h"
 #include "hpl1/engine/system/low_level_system.h"
 
@@ -44,6 +45,9 @@ namespace hpl {
 cVertexBufferOGL::cVertexBufferOGL(iLowLevelGraphics *apLowLevelGraphics, tVertexFlag aFlags,
 								   eVertexBufferDrawType aDrawType, eVertexBufferUsageType aUsageType,
 								   int alReserveVtxSize, int alReserveIdxSize) : iVertexBuffer(apLowLevelGraphics, aFlags, aDrawType, aUsageType, alReserveVtxSize, alReserveIdxSize) {
+
+	error("trying to create VertexBufferOGL");
+
 	if (alReserveVtxSize > 0) {
 		for (int i = 0; i < klNumOfVertexFlags; i++) {
 			if (aFlags & kvVertexFlags[i]) {
@@ -275,9 +279,11 @@ iVertexBuffer *cVertexBufferOGL::CreateCopy(eVertexBufferUsageType aUsageType) {
 	// Copy the vertices to the new buffer.
 	for (int i = 0; i < klNumOfVertexFlags; i++) {
 		if (kvVertexFlags[i] & mVertexFlags) {
+#if 0
 			int lElements = kvVertexElements[i];
 			if (mbTangents && kvVertexFlags[i] == eVertexFlag_Texture1)
 				lElements = 4;
+#endif
 
 			pVtxBuff->ResizeArray(kvVertexFlags[i], (int)mvVertexArray[i].size());
 

@@ -174,11 +174,9 @@ enum eGraphicCaps {
 
 	eGraphicCaps_Multisampling,
 
-	eGraphicCaps_GL_VertexProgram,
-	eGraphicCaps_GL_FragmentProgram,
+	eGraphicCaps_GL_GpuPrograms,
 	eGraphicCaps_GL_NVRegisterCombiners,
 	eGraphicCaps_GL_NVRegisterCombiners_MaxStages,
-	eGraphicCaps_GL_ATIFragmentShader,
 	eGraphicCaps_GL_BlendFunctionSeparate,
 	eGraphicCaps_GL_MultiTexture,
 
@@ -428,5 +426,7 @@ public:
 	virtual void FlushRendering() = 0;
 	virtual void SwapBuffers() = 0;
 };
-};     // namespace hpl
+
+}     // namespace hpl
+
 #endif // HPL_LOWLEVELGRAPHICS_H

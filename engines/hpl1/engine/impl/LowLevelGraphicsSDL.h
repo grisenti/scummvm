@@ -245,7 +245,7 @@ private:
 	int mlBpp;
 
 	// Gamma
-	uint16 mvStartGammaArray[3][256];
+	//uint16 mvStartGammaArray[3][256];
 	float mfGammaCorrection;
 
 	// Clipping
@@ -315,5 +315,7 @@ private:
 	// Vtx helper
 	void SetVtxBatchStates(tVtxBatchFlag flags);
 };
-};     // namespace hpl
+
+}     // namespace hpl
+
 #endif // HPL_LOWLEVELGRAPHICS_SDL_H

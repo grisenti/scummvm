@@ -36,8 +36,9 @@
 #include "hpl1/engine/system/Container.h"
 
 #include "hpl1/engine/impl/tinyXML/tinyxml.h"
-
-#include <stdio.h>
+#include "hpl1/hpl1.h"
+#include "hpl1/debug.h"
+#include "common/savefile.h"
 
 namespace hpl {
 
@@ -77,7 +78,7 @@ cSerializeMemberFieldIterator::cSerializeMemberFieldIterator(cSerializeSavedClas
 
 	// Make sure that the first field type is not null
 	if (mpSavedClass && mpSavedClass->mpMemberFields[mlFieldNum].mType == eSerializeType_NULL) {
-		if (mpSavedClass->msParentName != "") {
+		if (mpSavedClass->msParentName[0] != '\0') {
 			cSerializeSavedClass *pClass = cSerializeClass::GetClass(mpSavedClass->msParentName);
 			if (pClass) {
 				mpSavedClass = pClass;
@@ -105,7 +106,7 @@ cSerializeMemberField *cSerializeMemberFieldIterator::GetNext() {
 	mlFieldNum++;
 
 	if (mpSavedClass->mpMemberFields[mlFieldNum].mType == eSerializeType_NULL) {
-		if (mpSavedClass->msParentName != "") {
+		if (mpSavedClass->msParentName[0] != '\0') {
 			cSerializeSavedClass *pClass = cSerializeClass::GetClass(mpSavedClass->msParentName);
 			if (pClass) {
 				mpSavedClass = pClass;
@@ -190,37 +191,28 @@ void cSerializeClass::PrintMembers(iSerializable *apData) {
 //-----------------------------------------------------------------------
 
 bool cSerializeClass::SaveToFile(iSerializable *apData, const tWString &asFile, const tString &asRoot) {
-#if 0
 	SetUpData();
 
 	glTabs = 0;
-
-	TiXmlDocument *pXmlDoc = hplNew(TiXmlDocument, ());
-
+	// FIXME: string types
+	Common::String saveDesc(cString::To8Char(asFile).c_str());
+	Common::String filename(Hpl1::g_engine->createSaveFile(saveDesc));
+	TiXmlDocument pXmlDoc;
 	// Create root
 	TiXmlElement XmlRoot(asRoot.c_str());
-	TiXmlElement *pRootElem = static_cast<TiXmlElement *>(pXmlDoc->InsertEndChild(XmlRoot));
-
+	TiXmlElement *pRootElem = static_cast<TiXmlElement *>(pXmlDoc.InsertEndChild(XmlRoot));
+	Common::ScopedPtr<Common::OutSaveFile> savefile(g_engine->getSaveFileManager()->openForSaving(filename, false));
+	if (!savefile) {
+		Hpl1::logError(Hpl1::kDebugSaves, "could't open file %s for saving\n", filename.c_str());
+		return false;
+	}
 	SaveToElement(apData, "", pRootElem);
-
-// Save
-#ifdef WIN32
-	FILE *pFile = _wfopen(asFile.c_str(), _W("w+"));
-#else
-	FILE *pFile = fopen(cString::To8Char(asFile).c_str(), "w+");
-#endif
-
-	bool bRet = pXmlDoc->SaveFile(pFile);
-	if (bRet == false)
-		Error("Couldn't save class to '%s'\n", asFile.c_str());
-
-	if (pFile)
-		fclose(pFile);
-
-	hplDelete(pXmlDoc);
-	return bRet;
-#endif
-	return false; 
+	if (!pXmlDoc.SaveFile(*savefile)) {
+		Hpl1::logError(Hpl1::kDebugSaves, "couldn't save to file '%s'\n", filename.c_str());
+		return false;
+	}
+	g_engine->getMetaEngine()->appendExtendedSave(savefile.get(), g_engine->getTotalPlayTime(), saveDesc, filename.contains("auto"));
+	return true;
 }
 
 //-----------------------------------------------------------------------
@@ -281,43 +273,40 @@ void cSerializeClass::SaveToElement(iSerializable *apData, const tString &asName
 //-----------------------------------------------------------------------
 
 bool cSerializeClass::LoadFromFile(iSerializable *apData, const tWString &asFile) {
-#if 0
 	SetUpData();
 
 	glTabs = 0;
 
 	// Load document
-	TiXmlDocument *pXmlDoc = hplNew(TiXmlDocument, ());
-#ifdef WIN32
-	FILE *pFile = _wfopen(asFile.c_str(), _W("rb"));
-#else
-	FILE *pFile = fopen(cString::To8Char(asFile).c_str(), "rb");
-#endif
-
-	if (pXmlDoc->LoadFile(pFile) == false) {
-		Error("Couldn't load saved class file '%s' from %s!\n",
-			  cString::To8Char(asFile).c_str(),
-			  pXmlDoc->ErrorDesc());
-		if (pFile)
-			fclose(pFile);
-		hplDelete(pXmlDoc);
+	TiXmlDocument pXmlDoc;
+	// FIXME: string types
+	Common::String filename(Hpl1::g_engine->mapInternalSaveToFile(cString::To8Char(asFile).c_str()));
+	Common::ScopedPtr<Common::InSaveFile> saveFile(g_engine->getSaveFileManager()->openForLoading(filename));
+	if (!saveFile) {
+		Hpl1::logError(Hpl1::kDebugSaves | Hpl1::kDebugResourceLoading, "save file %s could not be opened\n", filename.c_str());
 		return false;
 	}
-	if (pFile)
-		fclose(pFile);
+	ExtendedSavegameHeader header;
+	if (!MetaEngine::readSavegameHeader(saveFile.get(), &header)) {
+		Hpl1::logError(Hpl1::kDebugResourceLoading | Hpl1::kDebugSaves, "couldn't load header from save file %s\n", filename.c_str());
+		return false;
+	}
+	g_engine->setTotalPlayTime(header.playtime);
+	if (pXmlDoc.LoadFile(*saveFile) == false) {
+		Hpl1::logError(Hpl1::kDebugResourceLoading | Hpl1::kDebugSaves,
+			"Couldn't load saved class file '%s' from %s!\n", cString::To8Char(asFile).c_str(),
+			pXmlDoc.ErrorDesc());
+		return false;
+	}
 
 	// Get root
-	TiXmlElement *pRootElem = pXmlDoc->RootElement();
+	TiXmlElement *pRootElem = pXmlDoc.RootElement();
 
 	// Get first, there should only be ONE class at the root.
 	TiXmlElement *pClassElem = pRootElem->FirstChildElement("class");
 
 	LoadFromElement(apData, pClassElem);
-
-	hplDelete(pXmlDoc);
 	return true;
-#endif
-	return false; 
 }
 
 //-----------------------------------------------------------------------
@@ -812,7 +801,7 @@ void cSerializeClass::LoadArray(TiXmlElement *apElement, iSerializable *apData, 
 	tString sName = cString::ToString(apElement->Attribute("name"), "");
 	tString sClassType = cString::ToString(apElement->Attribute("class_type"), "");
 	eSerializeType type = cString::ToInt(apElement->Attribute("type"), eSerializeMainType_NULL);
-	size_t lSize = cString::ToInt(apElement->Attribute("size"), 0);
+	//size_t lSize = cString::ToInt(apElement->Attribute("size"), 0);
 
 	if (gbLog) {
 		Log("%s Begin Saving array: '%s' classtype: %s type %d\n", GetTabs(), sName.c_str(), sClassType.c_str(), type);
@@ -846,13 +835,13 @@ void cSerializeClass::LoadArray(TiXmlElement *apElement, iSerializable *apData, 
 			size_t lOffset = sizeof(void *) * lCount;
 			iSerializable **pValuePtr = (iSerializable **)ValuePointer(pArrayData, lOffset);
 
-			tString sClassType = cString::ToString(pVarElem->Attribute("type"), "");
-			cSerializeSavedClass *pSavedClass = GetClass(sClassType);
+			tString sClassType2 = cString::ToString(pVarElem->Attribute("type"), "");
+			cSerializeSavedClass *pSavedClass = GetClass(sClassType2);
 			if (pSavedClass == NULL)
 				continue;
 
 			if (gbLog)
-				Log("%s Element Class pointer: %s\n", GetTabs(), sClassType.c_str());
+				Log("%s Element Class pointer: %s\n", GetTabs(), sClassType2.c_str());
 
 			// If NULL, then just create else delete and then create-
 			// virtual pointers here...yes yes...

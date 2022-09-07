@@ -170,9 +170,9 @@ void cSurfaceData::OnSlide(float afSpeed, const cVector3f &avPos, int alContacts
 			apBody->GetScrapeSoundEntity()->FadeOut(4.3f);
 			apBody->SetScrapeSoundEntity(NULL);
 			apBody->SetScrapeBody(NULL);
-			// Log("Stopped scrape '%s' %d on body '%s' IN SURFACEDATA!\n",msScrapeSoundName.c_str(),
-			//	(size_t)apBody->GetScrapeSoundEntity(),
-			//	apBody->GetName().c_str());
+			 Log("Stopped scrape '%s' %d on body '%s' IN SURFACEDATA!\n",msScrapeSoundName.c_str(),
+				(size_t)apBody->GetScrapeSoundEntity(),
+				apBody->GetName().c_str());
 		} else {
 			apBody->SetHasSlide(true);
 
@@ -227,9 +227,9 @@ void cSurfaceData::OnSlide(float afSpeed, const cVector3f &avPos, int alContacts
 				apBody->SetScrapeSoundEntity(pEntity);
 				apBody->SetScrapeBody(apSlideAgainstBody);
 
-				// Log("Starting scrape '%s' %d on body '%s'\n",msScrapeSoundName.c_str(),
-				//											(size_t)pEntity,
-				//											apBody->GetName().c_str());
+				Log("Starting scrape '%s' %d on body '%s'\n",msScrapeSoundName.c_str(),
+														(size_t)pEntity,
+														apBody->GetName().c_str());
 			}
 		}
 	}

@@ -434,8 +434,8 @@ class dgAABBTree
 			maxPasses --;
 		} while (maxPasses && (newCost < prevCost));
 
-		dgConstructionTree* newRoot = nodesList.GetLast()->GetInfo();
-		while (newRoot->m_parent) {
+		dgConstructionTree* newRoot = nodesList.GetLast() ? nodesList.GetLast()->GetInfo() : nullptr;
+		while (newRoot && newRoot->m_parent) {
 			newRoot = newRoot->m_parent;
 		}
 

@@ -66,6 +66,7 @@ bool cMeshLoaderCollada::FillStructures(const tString &asFile,
 										tColladaControllerVec *apColladaControllerVec,
 										tColladaAnimationVec *apColladaAnimVec,
 										cColladaScene *apColladaScene, bool abCache) {
+	abCache = false; // FIXME: find a way to enable the use of cache files
 	bool bLoadCache = false;
 	// abCache = false;
 	// Log("Loading %s\n",asFile.c_str());
@@ -96,9 +97,9 @@ bool cMeshLoaderCollada::FillStructures(const tString &asFile,
 							  apColladaControllerVec,
 							  apColladaAnimVec,
 							  apColladaScene);
+	} else if (abCache) {
+		Log("Cache out of date! Reloading collada file '%s'\n and generating cache files", asFile.c_str());
 	}
-
-	Log("Cache out of date! Reloading collada file '%s'\n", asFile.c_str());
 
 	/////////////////////////////////////////////////
 	// LOAD THE DOCUMENT
@@ -913,10 +914,10 @@ static void LoadControllerVec(TiXmlElement *apRootElem, tColladaControllerVec *a
 		return;
 	}
 
-	int lSize = cString::ToInt(pControllerRootElem->Attribute("Size"), 0);
+	int lSize1 = cString::ToInt(pControllerRootElem->Attribute("Size"), 0);
 
 	apColladaControllerVec->clear();
-	apColladaControllerVec->resize(lSize);
+	apColladaControllerVec->resize(lSize1);
 
 	int lCount = 0;
 	TiXmlElement *pControllerElem = pControllerRootElem->FirstChildElement();
@@ -1057,10 +1058,10 @@ static void LoadAnimationVec(TiXmlElement *apRootElem, tColladaAnimationVec *apC
 		return;
 	}
 
-	int lSize = cString::ToInt(pAnimationRootElem->Attribute("Size"), 0);
+	int lSize1 = cString::ToInt(pAnimationRootElem->Attribute("Size"), 0);
 
 	apColladaAnimationVec->clear();
-	apColladaAnimationVec->resize(lSize);
+	apColladaAnimationVec->resize(lSize1);
 
 	int lCount = 0;
 	TiXmlElement *pAnimationElem = pAnimationRootElem->FirstChildElement();
@@ -1135,10 +1136,10 @@ static void LoadAnimationVec(TiXmlElement *apRootElem, tColladaAnimationVec *apC
 static void LoadGeometryVec(TiXmlElement *apRootElem, tColladaGeometryVec *apColladaGeometryVec) {
 	TiXmlElement *pGeometryRootElem = apRootElem->FirstChildElement("GeometryRoot");
 
-	int lSize = cString::ToInt(pGeometryRootElem->Attribute("Size"), 0);
+	int lSize1 = cString::ToInt(pGeometryRootElem->Attribute("Size"), 0);
 
 	apColladaGeometryVec->clear();
-	apColladaGeometryVec->resize(lSize);
+	apColladaGeometryVec->resize(lSize1);
 
 	int lCount = 0;
 	TiXmlElement *pGeometryElem = pGeometryRootElem->FirstChildElement();

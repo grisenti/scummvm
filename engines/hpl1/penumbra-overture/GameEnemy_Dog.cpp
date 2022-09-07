@@ -48,7 +48,7 @@ iGameEnemyState_Dog_Base::iGameEnemyState_Dog_Base(int alId, cInit *apInit, iGam
 //-----------------------------------------------------------------------
 
 void iGameEnemyState_Dog_Base::OnSeePlayer(const cVector3f &avPosition, float afChance) {
-	// return;
+	return;
 	if (mpPlayer->GetHealth() <= 0)
 		return;
 
@@ -77,7 +77,7 @@ void iGameEnemyState_Dog_Base::OnSeePlayer(const cVector3f &avPosition, float af
 }
 
 bool iGameEnemyState_Dog_Base::OnHearNoise(const cVector3f &avPosition, float afVolume) {
-	// return false;
+	return false;
 	float afDistance = (mpMover->GetCharBody()->GetPosition() - avPosition).Length();
 
 	if (afVolume >= mpEnemyDog->mfIdleMinHearVolume && afDistance > 0.4f) {
@@ -115,7 +115,7 @@ void iGameEnemyState_Dog_Base::OnFlashlight(const cVector3f &avPosition) {
 
 	// mpEnemy->SetLastPlayerPos(mpPlayer->GetCharacterBody()->GetFeetPosition());
 	// mpEnemy->ChangeState(STATE_HUNT);
-
+	return;
 	mpEnemy->SetTempPosition(avPosition);
 	mpEnemy->ChangeState(STATE_INVESTIGATE);
 }
@@ -426,7 +426,7 @@ void cGameEnemyState_Dog_Eat::OnUpdate(float afTimeStep) {
 //-----------------------------------------------------------------------
 
 bool cGameEnemyState_Dog_Eat::OnHearNoise(const cVector3f &avPosition, float afVolume) {
-	// return false;
+	return false;
 	if (afVolume >= mpEnemyDog->mfEatMinHearVolume) {
 		mpEnemy->SetTempPosition(avPosition);
 		mpEnemy->ChangeState(STATE_INVESTIGATE);
@@ -723,7 +723,7 @@ void cGameEnemyState_Dog_Hunt::OnUpdate(float afTimeStep) {
 		// mpInit->mpEffectHandler->GetSubTitle()->Add("Update Path!",1.0f,true);
 		mfUpdatePathCount = mfUpdateFreq;
 
-		cAINodeContainer *pNodeCont = mpEnemy->GetMover()->GetNodeContainer();
+		/*cAINodeContainer *pNodeCont = */mpEnemy->GetMover()->GetNodeContainer();
 
 		// Log("%s: Checking free path\n",mpEnemy->GetName().c_str());
 
@@ -857,7 +857,7 @@ bool cGameEnemyState_Dog_Hunt::OnHearNoise(const cVector3f &avPosition, float af
 //-----------------------------------------------------------------------
 
 void cGameEnemyState_Dog_Hunt::OnDraw() {
-	float fWantedSpeed = mpMover->GetCharBody()->GetMoveSpeed(eCharDir_Forward);
+	/*float fWantedSpeed = */mpMover->GetCharBody()->GetMoveSpeed(eCharDir_Forward);
 	float fRealSpeed = cMath::Vector3Dist(mpMover->GetCharBody()->GetPosition(),
 										  mpMover->GetCharBody()->GetLastPosition());
 	fRealSpeed = fRealSpeed / (1.0f / 60.0f);
@@ -1490,13 +1490,13 @@ void cGameEnemyState_Dog_KnockDown::OnUpdate(float afTimeStep) {
 			// Calculate values
 			cVector3f vPosition;
 			cVector3f vAngles;
-			cMatrixf mtxTransform = mpEnemy->GetMeshEntity()->CalculateTransformFromSkeleton(&vPosition, &vAngles);
+			/*cMatrixf mtxTransform = */mpEnemy->GetMeshEntity()->CalculateTransformFromSkeleton(&vPosition, &vAngles);
 
 			// Seems to work better...
 			vPosition = mpEnemy->GetMeshEntity()->GetBoundingVolume()->GetWorldCenter();
 			cVector3f vGroundPos = vPosition;
 
-			bool bFoundGround = mpEnemy->GetGroundFinder()->GetGround(vPosition, cVector3f(0, -1, 0), &vGroundPos, NULL);
+			/*bool bFoundGround = */mpEnemy->GetGroundFinder()->GetGround(vPosition, cVector3f(0, -1, 0), &vGroundPos, NULL);
 
 			// Log("Found ground: %d | %s -> %s\n",bFoundGround,vPosition.ToString().c_str(),
 			//									vGroundPos.ToString().c_str());

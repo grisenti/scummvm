@@ -59,7 +59,7 @@ public:
 
 private:
 	bool mbHasCollided;
-	int mlCount;
+	//int mlCount;
 };
 
 //----------------------------------------
@@ -205,5 +205,6 @@ private:
 	int mlIdCount;
 };
 
-};     // namespace hpl
+}     // namespace hpl
+
 #endif // HPL_SOUNDHANDLER_H

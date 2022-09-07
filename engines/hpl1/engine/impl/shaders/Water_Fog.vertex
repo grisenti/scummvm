@@ -11,11 +11,10 @@
 
 vec4 position = gl_Vertex;
 vec4 color = gl_Color;
-vec3 uv = gl_MultiTexCoord0.xyz;
+vec2 uv = gl_MultiTexCoord0.xy;
 
-
-out vec4 vColor
-out vec3 vUv;
+out vec4 vColor;
+out vec2 vUv;
 out float vFogUv;
 
 uniform mat4 worldViewProj;
@@ -36,5 +35,5 @@ void main()
 	vUv = uv;
 	vFogUv = (fogEnd - gl_Position.z)/(fogEnd - fogStart);
 
-	vColor = color;
+	vColor = clamp(color, vec4(0.0), vec4(1.0));
 }

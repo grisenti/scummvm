@@ -80,6 +80,8 @@ cPlayer::cPlayer(cInit *apInit) : iUpdateable("Player") {
 	mvSize.y = mpInit->mpGameConfig->GetFloat("Player", "Height", 1);
 	mvSize.z = mvSize.x;
 
+	mpPushBody = nullptr;
+
 	mfCameraHeightAdd = mpInit->mpGameConfig->GetFloat("Player", "CameraHeightAdd", 0);
 
 	mfDefaultMass = mpInit->mpGameConfig->GetFloat("Player", "Mass", 1);
@@ -1091,7 +1093,7 @@ void cPlayer::Update(float afTimeStep) {
 	/////////////////////////////////////////////////
 	// Collide script
 	pPhysicsWorld = mpInit->mpGame->GetScene()->GetWorld3D()->GetPhysicsWorld();
-	cWorld3D *pWorld = mpInit->mpGame->GetScene()->GetWorld3D();
+	/*cWorld3D *pWorld = */mpInit->mpGame->GetScene()->GetWorld3D();
 	cCollideData collideData;
 	collideData.SetMaxSize(1);
 

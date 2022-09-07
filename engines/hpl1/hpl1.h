@@ -33,8 +33,11 @@
 #include "engines/engine.h"
 #include "engines/savestate.h"
 #include "graphics/screen.h"
+#include "common/bitarray.h"
 
 #include "hpl1/detection.h"
+
+class cInit;
 
 namespace Hpl1 {
 
@@ -44,10 +47,13 @@ class Hpl1Engine : public Engine {
 private:
 	const ADGameDescription *_gameDescription;
 	Common::RandomSource _randomSource;
+	cInit* _gameInit;
 
 protected:
 	// Engine APIs
 	Common::Error run() override;
+
+	void pauseEngineIntern(bool pause) override;
 
 public:
 	Graphics::Screen *_screen = nullptr;
@@ -83,6 +89,16 @@ public:
 	bool canSaveGameStateCurrently() override {
 		return true;
 	}
+
+	Common::String createSaveFile(const Common::String &internalName);
+
+	Common::String mapInternalSaveToFile(const Common::String &internalName);
+
+	void removeSaveFile(const Common::String &internalName);
+
+	Common::StringArray listInternalSaves(const Common::String &pattern);
+
+	Common::Error loadGameState(int slot) override;
 
 	/**
 	 * Uses a serializer to allow implementing savegame

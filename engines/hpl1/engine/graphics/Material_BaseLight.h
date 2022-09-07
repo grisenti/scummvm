@@ -44,6 +44,11 @@ enum eBaseLightProgram {
 
 namespace hpl {
 
+class cAmbProgramSetup : public iMaterialProgramSetup {
+public:
+	void Setup(iGpuProgram *apProgram, cRenderSettings *apRenderSettings);
+};
+
 class iMaterial_BaseLight : public iMaterial {
 public:
 	iMaterial_BaseLight(const tString &asLightVertexProgram,
@@ -104,5 +109,6 @@ protected:
 	iGpuProgram *_shaders[eBaseLightProgram_LastEnum];
 };
 
-};     // namespace hpl
+}     // namespace hpl
+
 #endif // HPL_MATERIAL_BASE_LIGHT_H

@@ -34,7 +34,8 @@ enum DebugChannels {
 	kDebugFilePath = 1 << 2,
 	kDebugOpenGL = 1 << 3,
 	kDebugRenderer = 1 << 4,
-	kDebugAudio = 1 << 5
+	kDebugAudio = 1 << 5,
+	kDebugSaves = 1 << 6
 };
 
 enum DebugLevels {
@@ -44,18 +45,18 @@ enum DebugLevels {
 };
 
 template<typename... Args>
-void logError(int channel, const char *fmt, Args... args) {
-	debugCN(kDebugLevelError, channel, fmt, args...);
+void logError(uint32 channels, const char *fmt, Args... args) {
+	debugCN(kDebugLevelError, channels, fmt, args...);
 }
 
 template<typename... Args>
-void logWarning(int channel, const char *fmt, Args... args) {
-	debugCN(kDebugLevelWarning, channel, fmt, args...);
+void logWarning(uint32 channels, const char *fmt, Args... args) {
+	debugCN(kDebugLevelWarning, channels, fmt, args...);
 }
 
 template<typename... Args>
-void logInfo(int channel, const char *fmt, Args... args) {
-	debugCN(kDebugLevelLog, channel, fmt, args...);
+void logInfo(uint32 channels, const char *fmt, Args... args) {
+	debugCN(kDebugLevelLog, channels, fmt, args...);
 }
 
 }
