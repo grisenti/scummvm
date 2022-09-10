@@ -47,11 +47,11 @@ public:
 	Hpl1MetaEngineDetection();
 	~Hpl1MetaEngineDetection() override {}
 
-	const char *getEngineId() const override {
+	const char *getName() const override {
 		return "hpl1";
 	}
 
-	const char *getName() const override {
+	const char *getEngineName() const override {
 		return "HPL1";
 	}
 

@@ -46,7 +46,7 @@ DetectedGames Hpl1MetaEngineDetection::detectGames(const Common::FSList &fslist,
 	DetectedGames games; 
 	for(auto file : fslist) {
 		if (file.getName() == "Penumbra.exe")
-			games.push_back(DetectedGame(getEngineId(), Hpl1::GAME_NAMES[0])); 
+			games.push_back(DetectedGame(getName(), Hpl1::GAME_NAMES[0])); 
 	}
 	return games; 
 } 
